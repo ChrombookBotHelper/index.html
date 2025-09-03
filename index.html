@@ -427,7 +427,7 @@
       if(!email || !pass){ toast("E-Mail & Passwort eingeben."); return; }
       await auth.createUserWithEmailAndPassword(email, pass);
       localStorage.setItem("staySignedIn", staySignedIn.checked ? "1" : "0");
-      toast("Konto erstellt – Profil anlegen.");
+      toast("Konto erstellt – bitte Profil anlegen und speichern.");
     }catch(e){ console.error(e); toast(e.message||"Registrierung fehlgeschlagen"); }
   });
   logoutBtn.addEventListener("click", async ()=>{ try{ await auth.signOut(); localStorage.setItem("staySignedIn","0"); }catch(e){} showView("authView"); });
@@ -449,12 +449,17 @@
     if(stateTimer) clearTimeout(stateTimer);
     stateTimer=setTimeout(async ()=>{
       try{
-        // Global mustRecreate gate
+        // Global mustRecreate gate (ALLOW new accounts after reset)
         const cfg = await getAppConfig();
-        if(cfg.mustRecreate && user && user.email !== OWNER_EMAIL){
-          try{ await auth.signOut(); }catch(e){}
-          showView('authView'); toast('System-Reset aktiv – bitte neu registrieren.');
-          return;
+        if(cfg && cfg.mustRecreate && user && user.email !== OWNER_EMAIL){
+          const createdMs = (user.metadata && user.metadata.creationTime) ? Date.parse(user.metadata.creationTime) : 0;
+          const resetMs = (typeof cfg.resetEpoch === 'number') ? cfg.resetEpoch : 0;
+          // If account was created BEFORE the reset, force re-register; otherwise allow
+          if(resetMs && createdMs && createdMs < resetMs){
+            try{ await auth.signOut(); }catch(e){}
+            showView('authView'); toast('System-Reset aktiv – bitte neu registrieren.');
+            return;
+          }
         }
         if(!user){ showView('authView'); return; }
         const doc=await db.collection('users').doc(user.uid).get();
