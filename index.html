@@ -1,370 +1,834 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>T‑Gear Builder • Bot‑ID</title>
-  <meta name="description" content="DE/EN Bot‑Landing mit Kategorien, Bot‑ID, Mitarbeiter‑Modus und Themes." />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Chatty – Mini‑Messenger (WhatsApp‑Style)</title>
+  <meta name="theme-color" content="#075E54">
   <style>
     :root{
-      --bg:#0b0b0e; --text:#f2f2f5; --muted:#b9bbc6; --card:#131319; --accent:#60c83c; --ring:#60c83c;
-      --brand:#e6e6ea; --danger:#ff5a5f; --ok:#26bf6e; --border:#24242b; --shadow:0 8px 22px rgba(0,0,0,.35)
+      --bg:#0b141a;
+      --panel:#111b21;
+      --panel-light:#202c33;
+      --accent:#075E54;
+      --accent-2:#128C7E;
+      --text:#e9edef;
+      --muted:#8696a0;
+      --me:#005c4b;
+      --them:#1f2c34;
+      --bubble-shadow:0 1px 1px rgba(0,0,0,.1);
+      --danger:#e53935;
+      --ok:#2e7d32;
     }
-    /* THEMES */
-    .theme-standard-black{ --bg:#0b0b0e; --text:#f2f2f5; --card:#131319; --accent:#60c83c; --brand:#e6e6ea; --border:#24242b }
-    .theme-standard-white{ --bg:#fafafc; --text:#0f1218; --card:#ffffff; --accent:#2f8dff; --brand:#101218; --border:#e8e9ef }
-    .theme-dragon-black-red{ --bg:#0a0708; --text:#f5e9ea; --card:#140b0d; --accent:#e32636; --brand:#f5e9ea; --border:#2a1518 }
-    .theme-dragon-gold{ --bg:#120f06; --text:#fff8de; --card:#1b1709; --accent:#d4af37; --brand:#fff3c6; --border:#2e260c }
-    .theme-giftgruen{ --bg:#051007; --text:#eaffef; --card:#0a1b0f; --accent:#60c83c; --brand:#eaffef; --border:#13331e }
-
+    *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text)}
-    .wrap{max-width:1200px; margin:0 auto; padding:16px 16px 120px}
-    header{position:sticky; top:0; backdrop-filter:saturate(1.1) blur(8px); background:color-mix(in oklab, var(--bg) 88%, transparent); border-bottom:1px solid var(--border); z-index:10}
-    .head{display:flex; gap:12px; align-items:center; justify-content:space-between; padding:12px 16px}
-    .brand{display:flex; gap:14px; align-items:center}
-    .logo{width:40px; height:40px; border:2px solid var(--accent); border-radius:12px; box-shadow:var(--shadow); position:relative}
-    .logo::after{content:""; position:absolute; inset:8px; border-radius:8px; border:2px dashed var(--accent)}
-    .title{font-weight:800; letter-spacing:.2px}
-    .muted{color:var(--muted)}
-    .row{display:flex; flex-wrap:wrap; gap:8px}
-    .pill{padding:8px 12px; border:1px solid var(--border); border-radius:999px; background:var(--card)}
-    .btn{appearance:none; border:1px solid var(--border); background:var(--card); color:var(--text); padding:10px 14px; border-radius:14px; cursor:pointer; box-shadow:var(--shadow); font-weight:600}
-    .btn:active{transform:translateY(1px)}
-    .btn.ghost{background:transparent}
-    .btn.primary{border-color:color-mix(in oklab, var(--accent) 70%, var(--border));}
-    .grid{display:grid; grid-template-columns:repeat(7, minmax(0,1fr)); gap:12px}
-    @media (max-width:1024px){ .grid{grid-template-columns:repeat(4, minmax(0,1fr));} }
-    @media (max-width:640px){ .grid{grid-template-columns:repeat(2, minmax(0,1fr));} }
-    .card{background:var(--card); border:1px solid var(--border); border-radius:18px; padding:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px}
-    .card h3{margin:0; font-size:16px}
-    .card p{margin:0; font-size:12px; color:var(--muted)}
-    .card .icon{font-size:30px}
+    body{
+      margin:0;
+      font:16px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    a { color: #34b7f1; text-decoration: none; }
+    .hidden{display:none !important}
+    .btn{
+      background:var(--accent);
+      border:none;
+      color:#fff;
+      padding:.75rem 1rem;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+      box-shadow:var(--bubble-shadow);
+    }
+    .btn.secondary{ background:var(--panel-light); }
+    .btn.ghost{ background:transparent; border:1px solid var(--panel-light); }
+    .btn.danger{ background:var(--danger); }
+    .btn:disabled{ opacity:.6; cursor:not-allowed }
 
-    .panel{display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px}
-    .chat{background:var(--card); border:1px solid var(--border); border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:10px}
-    .chatlog{height:220px; overflow:auto; border:1px dashed var(--border); border-radius:12px; padding:10px}
-    .inputrow{display:flex; gap:8px}
-    input[type=text]{flex:1; background:transparent; border:1px solid var(--border); color:var(--text); padding:12px 12px; border-radius:12px}
+    .input, select, input[type="date"]{
+      width:100%;
+      background:var(--panel-light);
+      color:var(--text);
+      border:1px solid #2a3942;
+      outline:none;
+      padding:.75rem 1rem;
+      border-radius:10px;
+    }
+    .label{display:block; color:var(--muted); font-size:.85rem; margin:.25rem 0 .35rem 0}
 
-    .badges{display:flex; gap:8px; flex-wrap:wrap}
-    .badge{border:1px solid var(--border); background:var(--card); padding:6px 10px; border-radius:999px; font-size:12px}
+    /* Layout */
+    .app{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      grid-template-rows: 64px 1fr 70px;
+      grid-template-areas:
+        "sidebar header"
+        "sidebar chat"
+        "sidebar composer";
+      height:100vh;
+      max-width:1400px;
+      margin:0 auto;
+      background:var(--panel);
+      border-left:1px solid #0a1014;
+      border-right:1px solid #0a1014;
+    }
+    .header{
+      grid-area:header;
+      background:var(--panel-light);
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+      padding:.5rem .75rem;
+      border-left:1px solid #0a1014;
+    }
+    .header img.pfp{ width:40px; height:40px; border-radius:50%; object-fit:cover }
+    .header .title{ font-weight:700 }
+    .header .subtitle{ font-size:.85rem; color:var(--muted) }
 
-    .footer{position:fixed; inset:auto 0 0 0; border-top:1px solid var(--border); background:var(--bg); padding:10px 16px; display:flex; gap:10px; align-items:center; justify-content:space-between}
+    .sidebar{
+      grid-area:sidebar;
+      border-right:1px solid #0a1014;
+      background:var(--panel);
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+    .sidebar .topbar{
+      height:64px; display:flex; align-items:center; justify-content:space-between;
+      padding:.5rem .75rem; background:var(--panel-light);
+    }
+    .sidebar .me-row{ display:flex; align-items:center; gap:.75rem }
+    .sidebar img.pfp{ width:40px; height:40px; border-radius:50%; object-fit:cover }
+    .sidebar .list{
+      overflow:auto;
+    }
+    .chat{
+      grid-area:chat;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%231d282f" d="M0 0h60v60H0z"/><circle cx="10" cy="10" r="2" fill="%23202c33"/><circle cx="40" cy="30" r="1.5" fill="%23202c33"/><circle cx="25" cy="50" r="1.2" fill="%23202c33"/></svg>') repeat;
+      padding:1rem;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:.35rem;
+    }
+    .bubble{
+      max-width:75%;
+      padding:.5rem .75rem;
+      border-radius:14px;
+      box-shadow:var(--bubble-shadow);
+      display:inline-flex;
+      flex-direction:column;
+      gap:.35rem;
+      line-height:1.3;
+    }
+    .bubble.me{ align-self:flex-end; background:var(--me) }
+    .bubble.them{ align-self:flex-start; background:var(--them) }
+    .bubble .meta{ font-size:.75rem; color:#d1d7dbcc; align-self:flex-end }
+    .bubble img.msg-image{ max-width:min(260px, 70vw); border-radius:8px }
+    .bubble audio{ width:240px }
 
-    .employee{display:none}
-    .employee.active{display:block}
+    .composer{
+      grid-area:composer;
+      background:var(--panel-light);
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      padding:.5rem;
+      border-left:1px solid #0a1014;
+    }
+    .composer .grow{ flex:1 }
+    .composer input[type="file"]{ display:none }
+    .icon-btn{
+      width:44px; height:44px; display:grid; place-items:center;
+      background:#22333a; border-radius:50%; cursor:pointer; border:1px solid #2a3942;
+    }
+    svg{ width:22px; height:22px; fill:#cfd8dc }
 
-    /* hidden login overlay */
-    .overlay{position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:50}
-    .overlay.show{display:flex}
-    .sheet{background:var(--card); border:1px solid var(--border); border-radius:18px; padding:18px; width:min(520px, 92vw); box-shadow:var(--shadow);}
+    .chat-item{
+      display:flex; gap:.6rem; padding:.6rem .75rem; cursor:pointer; align-items:center;
+      border-bottom:1px solid #0a1014;
+    }
+    .chat-item:hover{ background:#172229 }
+    .chat-item .meta{ display:flex; justify-content:space-between; width:100% }
+    .chat-item .name{ font-weight:600; }
+    .chat-item .last{ color:var(--muted); font-size:.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 160px; }
+    .chat-item .time{ color:var(--muted); font-size:.75rem }
+    .start-chat{
+      padding:.75rem; border-top:1px solid #0a1014; background:var(--panel-light);
+      display:flex; gap:.5rem;
+    }
 
-    /* thumbnails container */
-    .thumbs{display:flex; gap:12px; flex-wrap:wrap}
-    .thumbs img{display:block; width:280px; height:auto; border-radius:14px; border:1px solid var(--border)}
+    /* auth/profile cards */
+    .center-wrap{
+      min-height:100vh; display:grid; place-items:center; padding:1rem;
+    }
+    .card{
+      width:min(480px, 95vw);
+      background:var(--panel);
+      border:1px solid #0a1014;
+      border-radius:16px;
+      padding:1rem;
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
+    }
+    .card h1{ margin:.25rem 0 0 0; font-size:1.4rem }
+    .card p{ color:var(--muted) }
+    .row{ display:flex; gap:.6rem }
+    .row > *{ flex:1 }
 
-    .hint{font-size:12px; color:var(--muted)}
+    .pfp-lg{ width:84px; height:84px; border-radius:50%; object-fit:cover; background:#2a3942; display:block }
+    .inline-help{ font-size:.85rem; color:var(--muted) }
+
+    /* mobile responsive: collapse sidebar */
+    @media (max-width: 900px) {
+      .app{
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "header"
+          "chat"
+          "composer";
+      }
+      .sidebar{ display:none }
+    }
+
+    .toast{
+      position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+      background:#1f2c34; color:var(--text); padding:.5rem .75rem; border-radius:10px;
+      border:1px solid #2a3942; box-shadow:var(--bubble-shadow);
+      z-index:9999; display:none;
+    }
   </style>
 </head>
-<body class="theme-standard-black">
-  <header>
-    <div class="head wrap">
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
+<body>
+
+<!-- AUTH VIEW -->
+<section id="authView" class="center-wrap">
+  <div class="card">
+    <h1>📱 Anmeldung mit Telefonnummer</h1>
+    <p>Gib deine Nummer im internationalen Format ein (z. B. <b>+49...</b>).</p>
+    <label class="label" for="phoneInput">Telefonnummer</label>
+    <input id="phoneInput" class="input" placeholder="+49..." />
+    <div id="recaptcha-container" style="margin:.75rem 0;"></div>
+    <div class="row">
+      <button id="sendCodeBtn" class="btn">SMS‑Code senden</button>
+      <button id="demoLoginBtn" class="btn secondary" title="Nur zum Testen ohne SMS – entfernt einige Limits">Demo‑Login</button>
+    </div>
+    <div id="codeBox" class="hidden" style="margin-top:.75rem">
+      <label class="label" for="codeInput">Verifizierungs‑Code</label>
+      <input id="codeInput" class="input" placeholder="123456" />
+      <button id="verifyBtn" class="btn" style="margin-top:.5rem">Bestätigen</button>
+    </div>
+    <p class="inline-help">⚠️ Öffne diese Datei über <b>https://</b> (nicht <i>file://</i>). Aktiviere in Firebase Auth die <b>Telefon‑Anmeldung</b> und füge deine Domain unter <i>Autorisierte Domains</i> hinzu.</p>
+  </div>
+</section>
+
+<!-- PROFILE SETUP VIEW -->
+<section id="profileView" class="center-wrap hidden">
+  <div class="card">
+    <h1>👤 Profil anlegen</h1>
+    <p>Deine Freunde sehen deinen Namen, dein Bild und Geburtstag.</p>
+    <div class="row" style="align-items:center; margin:.5rem 0">
+      <img id="profilePhotoPreview" class="pfp-lg" alt="Profilbild">
+      <div>
+        <label class="label">Profilbild</label>
+        <input type="file" id="profilePhotoInput" accept="image/*" class="input" />
+      </div>
+    </div>
+    <label class="label" for="displayName">Name</label>
+    <input id="displayName" class="input" placeholder="Dein Name" />
+    <div class="row" style="margin-top:.5rem">
+      <div>
+        <label class="label" for="birthday">Geburtstag</label>
+        <input id="birthday" type="date" class="input" />
+      </div>
+      <div>
+        <label class="label" for="about">Info (optional)</label>
+        <input id="about" class="input" placeholder="Hey there! I am using Chatty." />
+      </div>
+    </div>
+    <button id="saveProfileBtn" class="btn" style="margin-top:1rem">Speichern & weiter</button>
+  </div>
+</section>
+
+<!-- MAIN APP VIEW -->
+<section id="appView" class="app hidden">
+  <aside class="sidebar">
+    <div class="topbar">
+      <div class="me-row">
+        <img id="mePhoto" class="pfp" alt="Ich">
         <div>
-          <div class="title">T‑Gear Builder</div>
-          <div class="muted" id="subtitle">Wähle deine Kategorie</div>
+          <div id="meName" class="title"></div>
+          <div id="mePhone" class="subtitle"></div>
         </div>
       </div>
-      <div class="row">
-        <button class="btn ghost" id="langBtn" aria-label="Language Toggle">EN</button>
-        <select class="btn" id="themeSel" title="Theme">
-          <option value="standard-black">Standard Black</option>
-          <option value="standard-white">Standard White</option>
-          <option value="dragon-black-red">Dragon Black/Red</option>
-          <option value="dragon-gold">Dragon Gold</option>
-          <option value="giftgruen">Giftgrün</option>
-        </select>
-        <button class="btn" id="helpBtn">/help</button>
-      </div>
+      <button id="logoutBtn" class="btn ghost" title="Abmelden">⎋</button>
+    </div>
+    <div class="start-chat">
+      <input id="searchPhone" class="input" placeholder="+49… Telefonnummer eingeben" />
+      <button id="startChatBtn" class="btn">Chat</button>
+    </div>
+    <div id="chatList" class="list"></div>
+  </aside>
+
+  <header class="header">
+    <img id="peerPhoto" class="pfp" alt="Kontakt">
+    <div>
+      <div id="peerName" class="title">Wähle einen Chat</div>
+      <div id="peerSubtitle" class="subtitle"></div>
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="badges" aria-label="Designs">
-      <span class="badge">Standard Black</span>
-      <span class="badge">Standard White</span>
-      <span class="badge">Dragon Black/Red</span>
-      <span class="badge">Dragon Gold</span>
-      <span class="badge">Giftgrün</span>
-    </section>
-
-    <div style="height:14px"></div>
-
-    <section class="thumbs" id="thumbs">
-      <!-- Thumbnails (links are placeholders and should be replaced with your repo paths) -->
-      <figure>
-        <img src="./assets/tgear_title_de.webp" alt="Titelbild Deutsch" onerror="this.style.display='none'">
-        <figcaption class="hint">Titelbild (DE)</figcaption>
-      </figure>
-      <figure>
-        <img src="./assets/tgear_title_en.webp" alt="Title Image English" onerror="this.style.display='none'">
-        <figcaption class="hint">Title Image (EN)</figcaption>
-      </figure>
-      <figure>
-        <img src="./assets/tgear_thumb_de_600.webp" alt="Thumbnail 600 Deutsch" onerror="this.style.display='none'">
-        <figcaption class="hint">Thumbnail 600×600 (DE)</figcaption>
-      </figure>
-      <figure>
-        <img src="./assets/tgear_thumb_en_600.webp" alt="Thumbnail 600 English" onerror="this.style.display='none'">
-        <figcaption class="hint">Thumbnail 600×600 (EN)</figcaption>
-      </figure>
-    </section>
-
-    <div style="height:14px"></div>
-
-    <section class="card">
-      <div class="muted" id="promo">Gaming‑Laptops · Laptops · Desktop‑PCs · Chromebooks · Handys · Tablets · E‑Scooter</div>
-      <div class="grid" id="cats">
-        <!-- Category cards will be injected by JS -->
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="chat">
-        <div class="row" style="justify-content:space-between; align-items:center">
-          <div class="muted">Bot‑ID: <span id="botId">…</span></div>
-          <div class="muted">Mitarbeiter‑Modus: <span id="empState">aus</span></div>
-        </div>
-        <div class="chatlog" id="log" aria-live="polite"></div>
-        <div class="inputrow">
-          <input id="inp" type="text" placeholder="Schreib /help für Befehle… (Ctrl+Alt+# öffnet Login)" />
-          <button class="btn primary" id="send">Senden</button>
-        </div>
-      </div>
-
-      <div class="employee" id="employeePanel">
-        <div class="card">
-          <h3>Employee Tools</h3>
-          <p class="muted" id="empHint">Nur sichtbar, wenn eingeloggt. Passcode: hinterlegt.</p>
-          <div class="row">
-            <button class="btn" data-tool="orders">🧾 Orders</button>
-            <button class="btn" data-tool="inventory">📦 Inventory</button>
-            <button class="btn" data-tool="messages">💬 Messages</button>
-          </div>
-        </div>
-      </div>
-    </section>
+  <main id="chatArea" class="chat">
+    <div style="text-align:center; color:var(--muted); margin-top:1rem">Kein Chat ausgewählt.</div>
   </main>
 
-  <div class="footer wrap">
-    <div class="hint">Hotkeys: Ctrl+Alt+# = Login • /de, /en • /theme <i>name</i> • /id • /setid X • /category <i>name</i> • /login • /logout • /flow</div>
-    <div class="row">
-      <button class="btn ghost" id="deBtn">DE</button>
-      <button class="btn ghost" id="enBtn">EN</button>
-    </div>
+  <div class="composer">
+    <label class="icon-btn" for="imageInput" title="Bild senden">
+      <input id="imageInput" type="file" accept="image/*" />
+      <svg viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5c-1.1 0-2 .9-2 2v14h18zM5 5h14v10l-3.5-3.5-2.5 2.5-4-4L5 13V5zm0 14h14v2H5v-2z"/></svg>
+    </label>
+    <button id="recBtn" class="icon-btn" title="Sprachnotiz aufnehmen">
+      <svg id="micIcon" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2zM11 19h2v3h-2v-3z"/></svg>
+    </button>
+    <input id="msgInput" class="input grow" placeholder="Nachricht" />
+    <button id="sendBtn" class="btn">Senden</button>
   </div>
+</section>
 
-  <!-- Login Overlay -->
-  <div class="overlay" id="overlay" role="dialog" aria-modal="true">
-    <div class="sheet">
-      <h3 id="loginTitle">Mitarbeiter‑Login</h3>
-      <p class="muted" id="loginInfo">Drücke Ctrl+Alt+# jederzeit, um dieses Fenster zu öffnen. Code eingeben:</p>
-      <div class="row" style="gap:10px; margin-top:6px">
-        <input id="code" type="text" placeholder="Passcode" />
-        <button class="btn primary" id="enter">OK</button>
-        <button class="btn" id="close">Schließen</button>
-      </div>
-      <p class="hint" id="loginHint">Standard‑Code: 140318 • /login öffnet auch</p>
-    </div>
-  </div>
+<div id="toast" class="toast"></div>
 
-  <script>
-    const $ = sel => document.querySelector(sel);
-    const tr = {
-      de: {
-        subtitle: 'Wähle deine Kategorie',
-        promo: 'Gaming‑Laptops · Laptops · Desktop‑PCs · Chromebooks · Handys · Tablets · E‑Scooter',
-        loginTitle: 'Mitarbeiter‑Login',
-        loginInfo: 'Drücke Ctrl+Alt+# jederzeit, um dieses Fenster zu öffnen. Code eingeben:',
-        loginHint: 'Standard‑Code: 140318 • /login öffnet auch',
-        placeholder: 'Schreib /help für Befehle… (Ctrl+Alt+# öffnet Login)',
-        help: `Befehle:\n  /help — zeigt diese Hilfe\n  /de /en — Sprache umstellen\n  /theme NAME — Themes: standard-black, standard-white, dragon-black-red, dragon-gold, giftgruen\n  /id — aktuelle Bot‑ID anzeigen\n  /setid NEUE_ID — Bot‑ID setzen (lokal gespeichert)\n  /category NAME — Kategorie öffnen (z.B. gaming-laptops)\n  /login — Login‑Dialog öffnen\n  /logout — Mitarbeiter‑Modus beenden\n  /flow — Flow‑Modus umschalten`,
-        empOn: 'an', empOff: 'aus'
-      },
-      en: {
-        subtitle: 'Choose your category',
-        promo: 'Gaming Laptops · Laptops · Desktop PCs · Chromebooks · Phones · Tablets · E‑Scooters',
-        loginTitle: 'Employee Login',
-        loginInfo: 'Press Ctrl+Alt+# anytime to open this dialog. Enter passcode:',
-        loginHint: 'Default code: 140318 • /login also opens',
-        placeholder: 'Type /help for commands… (Ctrl+Alt+# opens login)',
-        help: `Commands:\n  /help — show this help\n  /de /en — switch language\n  /theme NAME — themes: standard-black, standard-white, dragon-black-red, dragon-gold, giftgruen\n  /id — show current Bot ID\n  /setid NEW_ID — set Bot ID (stored locally)\n  /category NAME — open category (e.g., gaming-laptops)\n  /login — open login dialog\n  /logout — exit employee mode\n  /flow — toggle Flow mode`,
-        empOn: 'on', empOff: 'off'
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-storage-compat.js"></script>
+
+<script>
+  // === 1) INSERT YOUR FIREBASE CONFIG HERE ===
+  // Create a web app in Firebase Console and copy the config into this object.
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY_HERE",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  // ===========================================
+
+  // Initialize
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // UI helpers
+  const $ = (sel) => document.querySelector(sel);
+  const toast = (msg, ms=2500) => {
+    const el = $("#toast");
+    el.textContent = msg;
+    el.style.display = "block";
+    setTimeout(()=> el.style.display = "none", ms);
+  }
+
+  // Views
+  const authView = $("#authView");
+  const profileView = $("#profileView");
+  const appView = $("#appView");
+
+  // Auth elements
+  const phoneInput = $("#phoneInput");
+  const sendCodeBtn = $("#sendCodeBtn");
+  const codeBox = $("#codeBox");
+  const codeInput = $("#codeInput");
+  const verifyBtn = $("#verifyBtn");
+  const demoLoginBtn = $("#demoLoginBtn");
+
+  // Profile elements
+  const profilePhotoInput = $("#profilePhotoInput");
+  const profilePhotoPreview = $("#profilePhotoPreview");
+  const displayNameInput = $("#displayName");
+  const birthdayInput = $("#birthday");
+  const aboutInput = $("#about");
+  const saveProfileBtn = $("#saveProfileBtn");
+
+  // App elements
+  const mePhoto = $("#mePhoto");
+  const meName = $("#meName");
+  const mePhone = $("#mePhone");
+  const logoutBtn = $("#logoutBtn");
+
+  const chatList = $("#chatList");
+  const searchPhone = $("#searchPhone");
+  const startChatBtn = $("#startChatBtn");
+
+  const peerPhoto = $("#peerPhoto");
+  const peerName = $("#peerName");
+  const peerSubtitle = $("#peerSubtitle");
+
+  const chatArea = $("#chatArea");
+  const imageInput = $("#imageInput");
+  const recBtn = $("#recBtn");
+  const micIcon = $("#micIcon");
+  const msgInput = $("#msgInput");
+  const sendBtn = $("#sendBtn");
+
+  // State
+  let confirmationResult = null;
+  let me = null; // current user profile
+  let activeThreadId = null;
+  let activePeer = null;
+  let messagesUnsub = null;
+  let threadsUnsub = null;
+  let recorder = null;
+  let recChunks = [];
+  let isRecording = false;
+
+  // Recaptcha
+  let recaptchaVerifier = null;
+  const setupRecaptcha = () => {
+    try {
+      if (recaptchaVerifier) return;
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'normal'
+      });
+      recaptchaVerifier.render();
+    } catch(e){
+      console.warn('reCAPTCHA init failed', e);
+    }
+  };
+  setupRecaptcha();
+
+  // Auth handlers
+  function normalizePhone(p){
+    p = (p || '').trim();
+    if(!p.startsWith('+')) return p; // user must enter international format
+    return p;
+  }
+
+  sendCodeBtn.addEventListener('click', async () => {
+    const phone = normalizePhone(phoneInput.value);
+    if(!phone || !phone.startsWith('+')){
+      toast('Bitte im internationalen Format beginnen, z. B. +49...');
+      return;
+    }
+    try{
+      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
+      codeBox.classList.remove('hidden');
+      toast('SMS gesendet. Prüfe dein Handy.');
+    }catch(err){
+      console.error(err);
+      toast('Fehler beim Senden: ' + (err.message || err));
+    }
+  });
+
+  verifyBtn.addEventListener('click', async () => {
+    const code = codeInput.value.trim();
+    if(!confirmationResult){ toast('Bitte zuerst Code senden.'); return; }
+    try{
+      const cred = await confirmationResult.confirm(code);
+      // On success, auth state listener below will proceed
+      toast('Erfolgreich angemeldet.');
+    }catch(err){
+      console.error(err);
+      toast('Code falsch oder abgelaufen.');
+    }
+  });
+
+  // Demo login (anonymous) for local testing
+  demoLoginBtn.addEventListener('click', async () => {
+    try{
+      await auth.signInAnonymously();
+      toast('Demo‑Login aktiv (anonym).');
+    }catch(err){
+      console.error(err);
+      toast('Demo‑Login fehlgeschlagen.');
+    }
+  });
+
+  // Listen auth state
+  auth.onAuthStateChanged(async (user) => {
+    if(!user){
+      showView('auth');
+      return;
+    }
+    // Load or create user profile
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    me = userDoc.exists ? userDoc.data() : null;
+    if(!me){
+      // Prefill phone if available
+      displayNameInput.value = '';
+      aboutInput.value = 'Hey there! I am using Chatty.';
+      if(user.phoneNumber){
+        // store to temp state
       }
-    };
-
-    const BotConfig = {
-      defaultId: 'TGBOT-2025-09-01', // you can change via /setid
-      passcode: '140318',            // employee login code
-      flowCode: 'FLOW',              // special code keyword; /flow toggles mode
-      categories: [
-        { id:'gaming-laptops', name:{de:'Gaming‑Laptops', en:'Gaming Laptops'}, icon:'🎮💻' },
-        { id:'laptops',        name:{de:'Laptops',        en:'Laptops'},        icon:'💻' },
-        { id:'desktop-pcs',    name:{de:'Desktop‑PCs',    en:'Desktop PCs'},    icon:'🖥️' },
-        { id:'chromebooks',    name:{de:'Chromebooks',    en:'Chromebooks'},    icon:'💻' },
-        { id:'phones',         name:{de:'Handys',         en:'Phones'},         icon:'📱' },
-        { id:'tablets',        name:{de:'Tablets',        en:'Tablets'},        icon:'📲' },
-        { id:'e-scooters',     name:{de:'E‑Scooter',      en:'E‑Scooters'},     icon:'🛴' }
-      ]
-    };
-
-    let state = {
-      lang: localStorage.getItem('tgb_lang') || 'de',
-      botId: localStorage.getItem('tgb_id') || BotConfig.defaultId,
-      employee: false,
-      flow: false,
-      theme: localStorage.getItem('tgb_theme') || 'standard-black'
-    };
-
-    function applyLang(){
-      $('#subtitle').textContent = tr[state.lang].subtitle;
-      $('#promo').textContent = tr[state.lang].promo;
-      $('#loginTitle').textContent = tr[state.lang].loginTitle;
-      $('#loginInfo').textContent = tr[state.lang].loginInfo;
-      $('#loginHint').textContent = tr[state.lang].loginHint;
-      $('#inp').placeholder = tr[state.lang].placeholder;
-      $('#langBtn').textContent = state.lang === 'de' ? 'EN' : 'DE';
-      renderCats();
+      showView('profile');
+    }else{
+      showView('app');
+      renderMe(me);
+      startThreadsListener();
     }
+  });
 
-    function applyTheme(){
-      const body = document.body;
-      body.className = '';
-      body.classList.add('theme-' + state.theme);
-      localStorage.setItem('tgb_theme', state.theme);
+  function showView(which){
+    authView.classList.add('hidden');
+    profileView.classList.add('hidden');
+    appView.classList.add('hidden');
+    if(which==='auth') authView.classList.remove('hidden');
+    if(which==='profile') profileView.classList.remove('hidden');
+    if(which==='app') appView.classList.remove('hidden');
+  }
+
+  logoutBtn.addEventListener('click', async () => {
+    try{
+      await auth.signOut();
+      // cleanup
+      cleanupThreadListener();
+      cleanupThreadsListener();
+      me = null; activePeer = null; activeThreadId = null;
+      chatArea.innerHTML = '<div style="text-align:center; color:var(--muted); margin-top:1rem">Kein Chat ausgewählt.</div>';
+      toast('Abgemeldet.');
+    }catch(e){ console.error(e) }
+  });
+
+  // Profile upload
+  profilePhotoInput.addEventListener('change', () => {
+    const f = profilePhotoInput.files?.[0];
+    if(!f){ profilePhotoPreview.src=''; return; }
+    const reader = new FileReader();
+    reader.onload = e => profilePhotoPreview.src = e.target.result;
+    reader.readAsDataURL(f);
+  });
+
+  saveProfileBtn.addEventListener('click', async () => {
+    const user = auth.currentUser;
+    if(!user){ toast('Nicht angemeldet.'); return; }
+    const name = displayNameInput.value.trim();
+    const birthday = birthdayInput.value || null;
+    const about = aboutInput.value.trim() || null;
+    if(!name){ toast('Bitte Namen eingeben.'); return; }
+
+    let photoURL = null;
+    const f = profilePhotoInput.files?.[0];
+    try{
+      if(f){
+        const ext = f.name.split('.').pop() || 'jpg';
+        const ref = storage.ref().child(`pfp/${user.uid}.${ext}`);
+        await ref.put(f);
+        photoURL = await ref.getDownloadURL();
+      }
+      const profile = {
+        uid: user.uid,
+        phoneNumber: user.phoneNumber || null,
+        name, birthday, about,
+        photoURL: photoURL || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+      await db.collection('users').doc(user.uid).set(profile, { merge:true });
+      me = profile;
+      renderMe(me);
+      showView('app');
+      startThreadsListener();
+      toast('Profil gespeichert.');
+    }catch(err){
+      console.error(err);
+      toast('Profil speichern fehlgeschlagen.');
     }
+  });
 
-    function renderCats(){
-      const grid = $('#cats');
-      grid.innerHTML = '';
-      BotConfig.categories.forEach(cat => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="icon">${cat.icon}</div>
-          <h3>${cat.name[state.lang]}</h3>
-          <p>${cat.id}</p>
-          <button class="btn" data-go="${cat.id}">Open</button>
-        `;
-        card.querySelector('button').addEventListener('click', ()=> openCategory(cat.id));
-        grid.appendChild(card);
+  function renderMe(profile){
+    mePhoto.src = profile.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name || 'Ich');
+    meName.textContent = profile.name || 'Ich';
+    mePhone.textContent = profile.phoneNumber || 'Anonym';
+  }
+
+  // Threads (chat list)
+  function startThreadsListener(){
+    cleanupThreadsListener();
+    const user = auth.currentUser;
+    if(!user) return;
+    threadsUnsub = db.collection('threads')
+      .where('participants','array-contains', user.uid)
+      .orderBy('lastMessageAt','desc')
+      .limit(50)
+      .onSnapshot(snap => {
+        chatList.innerHTML = '';
+        snap.forEach(doc => {
+          const t = doc.data();
+          const peerId = t.participants.find(id => id !== user.uid);
+          renderChatItem(doc.id, t, peerId);
+        });
+      });
+  }
+  function cleanupThreadsListener(){ if(threadsUnsub){ threadsUnsub(); threadsUnsub=null; }}
+
+  async function renderChatItem(threadId, t, peerId){
+    // fetch peer profile (cache naive)
+    const peerDoc = await db.collection('users').doc(peerId).get();
+    const peer = peerDoc.data() || { name:'Unbekannt', photoURL:null, phoneNumber:'?' };
+    const div = document.createElement('div');
+    div.className = 'chat-item';
+    div.innerHTML = `
+      <img class="pfp" src="${peer.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(peer.name))}" alt="pfp">
+      <div class="meta">
+        <div>
+          <div class="name">${peer.name}</div>
+          <div class="last">${t.lastMessageText || (t.lastMessageType==='image' ? '🖼️ Bild' : t.lastMessageType==='audio' ? '🎤 Sprachnotiz' : '') || ''}</div>
+        </div>
+        <div class="time">${formatTime(t.lastMessageAt?.toDate?.())}</div>
+      </div>
+    `;
+    div.addEventListener('click', () => openThread(threadId, peer));
+    chatList.appendChild(div);
+  }
+
+  function formatTime(d){
+    if(!d) return '';
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    return sameDay ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) :
+      d.toLocaleDateString();
+  }
+
+  // Start chat with phone number
+  startChatBtn.addEventListener('click', async () => {
+    const phone = normalizePhone(searchPhone.value);
+    if(!phone || !phone.startsWith('+')){
+      toast('Nummer mit +Ländercode eingeben.');
+      return;
+    }
+    const peer = await findUserByPhone(phone);
+    if(!peer){
+      toast('Kein Nutzer mit dieser Nummer gefunden.');
+      return;
+    }
+    const threadId = await ensureThread(me.uid, peer.uid, me.phoneNumber, peer.phoneNumber);
+    await openThread(threadId, peer);
+    searchPhone.value = '';
+    toast('Chat geöffnet.');
+  });
+
+  async function findUserByPhone(phone){
+    const q = await db.collection('users').where('phoneNumber','==', phone).limit(1).get();
+    if(q.empty) return null;
+    return q.docs[0].data();
+  }
+
+  function makeThreadId(a,b){ return [a,b].sort().join('_'); }
+
+  async function ensureThread(uidA, uidB, phoneA, phoneB){
+    const id = makeThreadId(uidA, uidB);
+    const ref = db.collection('threads').doc(id);
+    const snap = await ref.get();
+    if(!snap.exists){
+      await ref.set({
+        participants: [uidA, uidB],
+        phones: [phoneA||null, phoneB||null],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastMessageText: '',
+        lastMessageType: ''
       });
     }
+    return id;
+  }
 
-    function log(msg){
-      const el = document.createElement('div');
-      el.textContent = msg;
-      $('#log').appendChild(el);
-      $('#log').scrollTop = $('#log').scrollHeight;
+  async function openThread(threadId, peer){
+    activeThreadId = threadId;
+    activePeer = peer;
+    peerPhoto.src = peer.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(peer.name || '?'));
+    peerName.textContent = peer.name || peer.phoneNumber || 'Kontakt';
+    peerSubtitle.textContent = peer.phoneNumber || '';
+    chatArea.innerHTML = '';
+    startMessagesListener(threadId);
+  }
+
+  function startMessagesListener(threadId){
+    cleanupThreadListener();
+    messagesUnsub = db.collection('threads').doc(threadId).collection('messages')
+      .orderBy('ts','asc')
+      .limit(200)
+      .onSnapshot(snap => {
+        chatArea.innerHTML = '';
+        snap.forEach(doc => renderMessage(doc.data()));
+        chatArea.scrollTop = chatArea.scrollHeight;
+      });
+  }
+  function cleanupThreadListener(){ if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }}
+
+  function renderMessage(m){
+    const div = document.createElement('div');
+    div.className = 'bubble ' + (m.senderId === auth.currentUser?.uid ? 'me' : 'them');
+    if(m.text){ 
+      const p = document.createElement('div'); 
+      p.textContent = m.text; 
+      div.appendChild(p); 
+    }
+    if(m.imageUrl){
+      const img = document.createElement('img');
+      img.className = 'msg-image';
+      img.src = m.imageUrl;
+      img.alt = 'Bild';
+      div.appendChild(img);
+    }
+    if(m.audioUrl){
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = m.audioUrl;
+      div.appendChild(audio);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = formatTime(m.ts?.toDate?.());
+    div.appendChild(meta);
+    chatArea.appendChild(div);
+  }
+
+  // Send text
+  sendBtn.addEventListener('click', sendText);
+  msgInput.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendText(); }
+  });
+  async function sendText(){
+    const text = msgInput.value.trim();
+    if(!text) return;
+    if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); return; }
+    msgInput.value = '';
+    await pushMessage({ text });
+  }
+
+  // Send image
+  imageInput.addEventListener('change', async () => {
+    const f = imageInput.files?.[0];
+    if(!f){ return; }
+    if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); imageInput.value=''; return; }
+    try{
+      const url = await uploadFile(f, 'images');
+      await pushMessage({ imageUrl: url, type:'image' });
+      imageInput.value = '';
+    }catch(err){
+      console.error(err);
+      toast('Upload fehlgeschlagen.');
+    }
+  });
+
+  // Voice notes (MediaRecorder)
+  recBtn.addEventListener('click', async () => {
+    if(isRecording){
+      // stop
+      recorder?.stop();
+      isRecording = false;
+      micIcon.style.opacity = 1;
+      return;
+    }
+    if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); return; }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      recChunks = [];
+      recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => { if(e.data.size>0) recChunks.push(e.data) };
+      recorder.onstop = async () => {
+        const blob = new Blob(recChunks, { type: 'audio/webm' });
+        const file = new File([blob], `voice_${Date.now()}.webm`, { type:'audio/webm' });
+        const url = await uploadFile(file, 'audio');
+        await pushMessage({ audioUrl: url, type:'audio' });
+      };
+      recorder.start();
+      isRecording = true;
+      micIcon.style.opacity = 0.6;
+      toast('🎤 Aufnahme… erneut tippen zum Beenden.');
+    }catch(err){
+      console.error(err);
+      toast('Mikrofonzugriff verweigert.');
+    }
+  });
+
+  async function uploadFile(file, folder){
+    const uid = auth.currentUser.uid;
+    const safeName = (file.name || 'file').replace(/[^a-z0-9\._-]+/gi,'_').toLowerCase();
+    const ref = storage.ref().child(`${folder}/${uid}/${Date.now()}_${safeName}`);
+    await ref.put(file);
+    return await ref.getDownloadURL();
+  }
+
+  async function pushMessage({ text=null, imageUrl=null, audioUrl=null, type=null }){
+    const user = auth.currentUser;
+    if(!user || !activeThreadId) return;
+    const msg = {
+      senderId: user.uid,
+      text: text || null,
+      imageUrl: imageUrl || null,
+      audioUrl: audioUrl || null,
+      ts: firebase.firestore.FieldValue.serverTimestamp(),
+      type: type || (imageUrl ? 'image' : audioUrl ? 'audio' : 'text')
+    };
+    const msgRef = db.collection('threads').doc(activeThreadId).collection('messages').doc();
+    await msgRef.set(msg);
+    // Update thread summary
+    const patch = {
+      lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+      lastMessageText: text || (imageUrl ? '🖼️ Bild' : audioUrl ? '🎤 Sprachnotiz' : ''),
+      lastMessageType: msg.type
+    };
+    await db.collection('threads').doc(activeThreadId).set(patch, { merge:true });
+  }
+
+  // Initial pfp placeholder
+  profilePhotoPreview.src = 'https://ui-avatars.com/api/?name=Du';
+
+  // Remind about https
+  if(location.protocol !== 'https:' && location.hostname !== 'localhost'){
+    toast('Tipp: Für Telefon‑Login brauchst du HTTPS/Hosting.' , 5000);
+  }
+
+</script>
+
+<!--
+FIREBASE SECURITY RULES (empfohlen – in Firebase Console eintragen)
+
+Firestore rules:
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid);
     }
 
-    function setBotId(id){
-      state.botId = String(id).trim();
-      localStorage.setItem('tgb_id', state.botId);
-      $('#botId').textContent = state.botId;
-    }
-
-    function openLogin(){ $('#overlay').classList.add('show'); $('#code').focus(); }
-    function closeLogin(){ $('#overlay').classList.remove('show'); }
-
-    function openCategory(id){
-      log(`[${state.lang==='de'?'Kategorie':'Category'}] ${id} → (Router‑Hook) botId=${state.botId}, flow=${state.flow}`);
-      // Here you would navigate to the real page for the category.
-    }
-
-    function setEmployee(on){
-      state.employee = !!on;
-      $('#empState').textContent = on ? tr[state.lang].empOn : tr[state.lang].empOff;
-      $('#employeePanel').classList.toggle('active', !!on);
-    }
-
-    function toggleFlow(){
-      state.flow = !state.flow;
-      log(`Flow: ${state.flow ? 'ON' : 'OFF'}`);
-    }
-
-    // INIT
-    setBotId(state.botId);
-    applyTheme();
-    applyLang();
-    $('#themeSel').value = state.theme;
-
-    // UI handlers
-    $('#langBtn').addEventListener('click', ()=>{
-      state.lang = state.lang==='de'?'en':'de';
-      localStorage.setItem('tgb_lang', state.lang);
-      applyLang();
-    });
-    $('#deBtn').addEventListener('click', ()=>{ state.lang='de'; localStorage.setItem('tgb_lang','de'); applyLang(); });
-    $('#enBtn').addEventListener('click', ()=>{ state.lang='en'; localStorage.setItem('tgb_lang','en'); applyLang(); });
-    $('#themeSel').addEventListener('change', (e)=>{ state.theme = e.target.value; applyTheme(); });
-
-    $('#helpBtn').addEventListener('click', ()=> log(tr[state.lang].help));
-
-    $('#send').addEventListener('click', handleInput);
-    $('#inp').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ handleInput(); }});
-
-    function handleInput(){
-      const v = $('#inp').value.trim();
-      if(!v) return;
-      $('#inp').value='';
-      if(v.startsWith('/')){
-        const [cmd, ...rest] = v.slice(1).split(/\s+/);
-        const arg = rest.join(' ');
-        switch(cmd.toLowerCase()){
-          case 'help': log(tr[state.lang].help); break;
-          case 'de': state.lang='de'; localStorage.setItem('tgb_lang','de'); applyLang(); log('Sprache: DE'); break;
-          case 'en': state.lang='en'; localStorage.setItem('tgb_lang','en'); applyLang(); log('Language: EN'); break;
-          case 'theme': if(arg){ state.theme = arg; applyTheme(); log('Theme → '+arg); } else { log('Themes: standard-black, standard-white, dragon-black-red, dragon-gold, giftgruen'); } break;
-          case 'id': log('Bot‑ID: '+state.botId); break;
-          case 'setid': if(arg){ setBotId(arg); log('Bot‑ID gesetzt.'); } else { log('Nutzung: /setid NEUE_ID'); } break;
-          case 'category': if(arg){ openCategory(arg); } else { log('Nutzung: /category NAME'); } break;
-          case 'login': openLogin(); break;
-          case 'logout': setEmployee(false); log('Logout.'); break;
-          case 'flow': toggleFlow(); break;
-          default: log('Unbekannter Befehl: /'+cmd);
-        }
-      } else {
-        // Normal bot text – here you could connect to your AI backend
-        log((state.lang==='de'?'Du sagst: ':'You said: ') + v);
+    match /threads/{threadId} {
+      allow read, update, delete: if isSignedIn() && request.resource.data.participants.hasAny([request.auth.uid]) ||
+                                  isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
+      allow create: if isSignedIn() && request.resource.data.participants.size() == 2 &&
+                    request.resource.data.participants.hasAll([request.auth.uid]);
+      match /messages/{msgId} {
+        allow read, create: if isSignedIn() && get(/databases/$(database)/documents/threads/$(threadId)).data.participants.hasAny([request.auth.uid]);
+        allow delete, update: if false; // nicht nötig
       }
     }
+  }
+}
 
-    // Login overlay
-    $('#close').addEventListener('click', closeLogin);
-    $('#enter').addEventListener('click', ()=>{
-      const code = $('#code').value.trim();
-      if(code === BotConfig.passcode || code.toUpperCase() === BotConfig.flowCode){
-        setEmployee(true);
-        if(code.toUpperCase() === BotConfig.flowCode) state.flow = true;
-        closeLogin(); log('Login ok.');
-      } else {
-        log('Code falsch.');
-      }
-    });
+Storage rules:
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
 
-    // Hotkey: Ctrl+Alt+# (fallback: Ctrl+Alt+3)
-    window.addEventListener('keydown', (e)=>{
-      if(e.ctrlKey && e.altKey && (e.key === '#' || e.code === 'Digit3')){
-        e.preventDefault(); openLogin();
-      }
-    });
-
-    // Startup message and thumbnails info
-    log('T‑Gear Builder bereit. /help eingeben für Befehle.');
-    log('Hinweis: Lege die vier Bilder in ./assets/ ab (siehe Dateinamen in der Thumbnails‑Sektion).');
-  </script>
+HINWEISE:
+1) In Firebase Auth die Telefon‑Anmeldung aktivieren.
+2) Unter Auth -> Einstellungen -> Autorisierte Domains die Domain hinzufügen, auf der du diese Datei hostest.
+3) Datei nicht per file:// öffnen. Nutze z. B. Firebase Hosting, GitHub Pages, Vercel oder lokal mit "npx serve".
+4) Telefonnummern IMMER im internationalen Format (+49...). Jeder Nutzer muss einmal angemeldet sein, damit er in /users existiert.
+-->
 </body>
 </html>
