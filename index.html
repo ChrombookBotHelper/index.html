@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Chatty – Messenger + Slot (stabiler Login, Bank, Auto-Toplist-Montag)</title>
+  <title>Chatty – Messenger + Slot + Bank (Admin & Weekly Loans)</title>
   <meta name="theme-color" content="#075E54">
   <style>
     :root{
@@ -14,16 +14,17 @@
     *{box-sizing:border-box} html,body{height:100%}
     body{margin:0;font:16px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
     .hidden{display:none!important} a{color:#34b7f1;text-decoration:none}
-    .btn{background:var(--accent);border:none;color:#fff;padding:.65rem .9rem;border-radius:10px;cursor:pointer;font-weight:600;box-shadow:var(--bubble-shadow)}
+    .btn{background:var(--accent);border:none;color:#fff;padding:.55rem .85rem;border-radius:10px;cursor:pointer;font-weight:600;box-shadow:var(--bubble-shadow)}
     .btn.secondary{background:var(--panel-light);border:1px solid #2a3942}
     .btn.ghost{background:transparent;border:1px solid #2a3942}
     .btn.danger{background:var(--danger)}
     .btn:disabled{opacity:.6;cursor:not-allowed}
-    .input,select,input[type="date"],input[type="email"],input[type="password"],input[type="search"]{
-      width:100%;background:var(--panel-light);color:var(--text);border:1px solid #2a3942;outline:none;padding:.7rem 1rem;border-radius:10px
+    .input,select,input[type="date"],input[type="email"],input[type="password"],input[type="search"],input[type="number"]{
+      width:100%;background:var(--panel-light);color:var(--text);border:1px solid #2a3942;outline:none;padding:.6rem .8rem;border-radius:10px
     }
+    .small{width:90px}
     .label{display:block;color:var(--muted);font-size:.85rem;margin:.2rem 0 .35rem}
-    .row{display:flex;gap:.6rem}.row>*{flex:1}
+    .row{display:flex;gap:.6rem;align-items:center}.row>*{flex:1}
     .chip{background:#172229;border:1px solid #23313a;border-radius:999px;padding:.25rem .6rem;font-size:.85rem;color:#cfe5d9}
 
     .app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:64px 1fr 70px;grid-template-areas:"sidebar header""sidebar chat""sidebar composer";height:100vh;max-width:1400px;margin:0 auto;background:var(--panel);border-left:1px solid var(--border);border-right:1px solid var(--border);overflow:hidden}
@@ -55,10 +56,10 @@
     .center-wrap{min-height:100vh;display:grid;place-items:center;padding:1rem}
     .card{width:min(480px,95vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:1rem;box-shadow:0 8px 30px rgba(0,0,0,.35)}
     .pfp-lg{width:84px;height:84px;border-radius:50%;object-fit:cover;background:#2a3942;display:block}
-    .inline-help{font-size:.85rem;color:var(--muted)}
+    .inline-help{font-size:.85rem;color:#cfd8dc}
 
     .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9998;padding:1rem}
-    .sheet{width:min(720px,96vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:1rem;box-shadow:0 16px 60px rgba(0,0,0,.55)}
+    .sheet{width:min(900px,96vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:1rem;box-shadow:0 16px 60px rgba(0,0,0,.55)}
     .sheet header{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.5rem}
     .sheet h2{margin:0;font-size:1.2rem}
 
@@ -78,6 +79,11 @@
       .reel .cell{font-size:28px;height:36px}
       .slot-controls .input{max-width:98px}
     }
+
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid #24323b;padding:.5rem;text-align:left;font-size:.92rem}
+    .table th{color:#b7c8d1;font-weight:700}
+    .actions{display:flex;gap:.35rem;flex-wrap:wrap}
 
     .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1f2c34;color:var(--text);padding:.5rem .75rem;border-radius:10px;border:1px solid #2a3942;box-shadow:var(--bubble-shadow);z-index:9999;display:none}
   </style>
@@ -104,7 +110,6 @@
       <button id="clearSessionBtn" class="btn ghost">Sitzung löschen</button>
       <button id="forceLoginScreenBtn" class="btn ghost">Immer Login zeigen</button>
     </div>
-    <p class="inline-help" style="margin-top:.5rem">Admin benötigt zusätzlich einen <b>Admin-Code</b>.</p>
   </div>
 </section>
 
@@ -259,13 +264,40 @@
         </select>
         <button id="slotSpin" class="btn">SPIN</button>
         <button id="slotAuto10" class="btn secondary">Autospin ×10</button>
-        <button id="slotLoanBtn" class="btn secondary" title="Bis 10.000€ leihen">🏦 Leihen</button>
+        <button id="bankBtn" class="btn secondary" title="Bank: Leihen / Zurückzahlen">🏦 Bank</button>
         <button id="slotRules" class="btn secondary">Regeln</button>
       </div>
     </div>
     <div class="leaderboard">
       <h3>🏆 Top 10 (Gesamtgewinne)</h3>
       <div id="lb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BANK MODAL (User) -->
+<div id="bankModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Bank">
+  <div class="sheet">
+    <header><h2>🏦 Bank – Leihen & Zurückzahlen</h2><button id="bankClose" class="btn secondary">Schließen</button></header>
+    <div class="row">
+      <div class="card" style="padding:1rem">
+        <h3>Geld leihen</h3>
+        <p class="inline-help">Max. 10.000 € pro Woche · Gesamtlimit 100.000 € offen</p>
+        <div class="row">
+          <input id="loanAmount" type="number" class="input small" placeholder="€" min="1" step="1" />
+          <button id="loanDo" class="btn">Leihen</button>
+        </div>
+        <div class="chip" id="loanInfo"></div>
+      </div>
+      <div class="card" style="padding:1rem">
+        <h3>Zurückzahlen</h3>
+        <p class="inline-help">Von deinem Guthaben an die Bank</p>
+        <div class="row">
+          <input id="repayAmount" type="number" class="input small" placeholder="€" min="1" step="1" />
+          <button id="repayDo" class="btn secondary">Zurückzahlen</button>
+        </div>
+        <div class="chip" id="repayInfo"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -285,21 +317,30 @@
     <div class="kpis">
       <div class="kpi">Bank-Saldo: <b id="bankBalanceLabel">€ 0</b></div>
     </div>
-    <div class="row">
-      <input id="admEmail" class="input" type="email" placeholder="E-Mail Nutzer"/>
-      <input id="admAmount" class="input" type="number" placeholder="Betrag (€)"/>
-    </div>
+
     <div class="row" style="margin-top:.5rem">
-      <button id="admGiveToUserBtn" class="btn">Nutzer: Guthaben geben</button>
-      <button id="admTakeFromUserBtn" class="btn secondary">Nutzer: Guthaben abziehen</button>
-    </div>
-    <div class="row" style="margin-top:.5rem">
-      <button id="admGiveToMeBtn" class="btn">Mir Guthaben geben</button>
       <button id="admBankCreditBtn" class="btn secondary">Bank + Betrag</button>
       <button id="admBankDebitBtn" class="btn danger">Bank − Betrag</button>
+      <input id="admAmount" class="input small" type="number" placeholder="€" />
     </div>
+
     <div class="row" style="margin-top:.5rem">
+      <button id="admTopResetBtn" class="btn secondary">Topliste zurücksetzen</button>
       <button id="admHardResetBtn" class="btn danger">⚠️ Hard Reset (Alles zurücksetzen)</button>
+    </div>
+
+    <h3 style="margin-top:1rem">👥 Konten (live)</h3>
+    <div class="row" style="margin:.25rem 0">
+      <input id="admFilter" class="input" placeholder="Name oder E-Mail filtern" />
+      <button id="admRefresh" class="btn secondary">Aktualisieren</button>
+    </div>
+    <div style="max-height:360px;overflow:auto;border:1px solid #23313a;border-radius:12px">
+      <table class="table">
+        <thead>
+          <tr><th>Name</th><th>E-Mail</th><th>Guthaben</th><th>Wins</th><th>Loan offen</th><th>Aktionen</th></tr>
+        </thead>
+        <tbody id="adminUsers"></tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -325,9 +366,41 @@
   firebase.initializeApp(firebaseConfig);
   const auth=firebase.auth(), db=firebase.firestore(), storage=firebase.storage();
 
-  // === Admin (Demo client-side) ===
   const OWNER_EMAIL = "julian1339klausch@gmx.de";
   const OWNER_ADMIN_CODE = "140318";
+
+  
+  // === Environment checks (file:// and storage availability) ===
+  function checkRuntimeEnvironment(){
+    const isFile = location.protocol === 'file:';
+    let storageOk = true;
+    try { localStorage.setItem('__check','1'); localStorage.removeItem('__check'); }
+    catch(e){ storageOk = false; }
+
+    if(isFile || !storageOk){
+      const reason = isFile
+        ? 'Diese Datei wurde über file:// geöffnet. Firebase Auth benötigt http(s).'
+        : 'Web Storage (localStorage) ist deaktiviert.';
+      const el = document.createElement('div');
+      el.style.cssText = 'position:fixed;inset:0;display:grid;place-items:center;background:#0b141acc;z-index:10000;color:#fff;padding:16px;text-align:center';
+      el.innerHTML = `<div style="max-width:720px;background:#111b21;border:1px solid #2a3942;border-radius:14px;padding:16px">
+        <h2 style="margin:0 0 8px 0">Login nicht möglich</h2>
+        <p style="margin:8px 0 12px 0">${reason}</p>
+        <ol style="text-align:left;line-height:1.5">
+          <li>Starte einen lokalen Webserver, z. B. <code>python -m http.server 8080</code>.</li>
+          <li>Öffne die Seite über <b>http://localhost:8080/DATEINAME.html</b>.</li>
+          <li>Stelle sicher, dass in Firebase <i>E-Mail/Passwort</i> als Sign-In-Methode aktiviert ist und deine Domain (localhost) unter <i>Authorized domains</i> steht.</li>
+        </ol>
+        <div style="margin-top:12px"><button id="envClose" class="btn">Verstanden</button></div>
+      </div>`;
+      document.body.appendChild(el);
+      const btn = el.querySelector('#envClose'); if(btn) btn.addEventListener('click', ()=> el.remove());
+      // Disable auth buttons to avoid confusion
+      const login=document.getElementById('loginBtn'), reg=document.getElementById('registerBtn');
+      if(login) login.disabled=true; if(reg) reg.disabled=true;
+    }
+  }
+  document.addEventListener('DOMContentLoaded', checkRuntimeEnvironment);
 
   // === Helpers ===
   const $ = s => document.querySelector(s);
@@ -335,17 +408,17 @@
   const showView = which => { ["authView","profileView","appView"].forEach(id=>$("#"+id).classList.add("hidden")); $("#"+which).classList.remove("hidden"); };
   const formatTime = (d) => { if(!d) return ''; const now=new Date(); const sameDay=d.toDateString()===now.toDateString(); return sameDay? d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : d.toLocaleDateString(); };
   const fmtEUR = v => "€ " + (Math.round(v).toLocaleString());
+  const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
 
-  // === Global App Config (reset gate) & weekly reset ===
+  // === App config & weekly logic ===
   async function getAppConfig(){
     const ref = db.collection('app').doc('config');
     const snap = await ref.get();
     return snap.exists ? snap.data() : {};
   }
   function isoWeekKey(date=new Date()){
-    // ISO week number (weeks start Monday); Thursday-based method
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const day = d.getUTCDay() || 7; // Sun=0 -> 7
+    const day = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - day);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
     const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
@@ -361,25 +434,19 @@
       const cfg = cfgSnap.exists ? cfgSnap.data() : {};
       const thisWeek = isoWeekKey(new Date());
       if(cfg.lastToplistResetWeek === thisWeek) return;
-      // Mark first to avoid duplicates
-      await cfgRef.set({
-        lastToplistResetWeek: thisWeek,
-        lastToplistResetTs: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-      // Reset wins
+      await cfgRef.set({ lastToplistResetWeek: thisWeek, lastToplistResetTs: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       const snap = await db.collection('users').get();
       let batch = db.batch(); let count = 0;
       snap.forEach(doc=>{
         batch.set(doc.ref, { slotWinsTotal: 0 }, { merge: true });
-        count++;
-        if(count % 400 === 0){ batch.commit(); batch = db.batch(); }
+        count++; if(count % 400 === 0){ batch.commit(); batch = db.batch(); }
       });
       await batch.commit();
       toast("Topliste für diese Woche zurückgesetzt.");
     }catch(e){ console.error("Weekly reset error", e); }
   }
 
-  // === Auth UI refs ===
+  // === Auth elements ===
   const emailInput=$("#emailInput"), passInput=$("#passInput"), loginBtn=$("#loginBtn"), registerBtn=$("#registerBtn"), staySignedIn=$("#staySignedIn");
   const clearSessionBtn=$("#clearSessionBtn"), forceLoginScreenBtn=$("#forceLoginScreenBtn"), switchAccountBtn=$("#switchAccountBtn"), logoutBtn=$("#logoutBtn");
 
@@ -392,16 +459,16 @@
 
   const openSearchBtn=$("#openSearchBtn"), searchModal=$("#searchModal"), searchClose=$("#searchClose"), searchNameModal=$("#searchNameModal"), searchEmailModal=$("#searchEmailModal"), searchRunBtn=$("#searchRunBtn"), searchStartChatBtn=$("#searchStartChatBtn"), searchResults=$("#searchResults");
   const openTopBtn=$("#openTopBtn"), topModal=$("#topModal"), topClose=$("#topClose");
-  const adminBtn=$("#adminBtn"), adminModal=$("#adminModal"), adminClose=$("#adminClose"), bankBalanceLabel=$("#bankBalanceLabel"), admEmail=$("#admEmail"), admAmount=$("#admAmount"), admGiveToUserBtn=$("#admGiveToUserBtn"), admTakeFromUserBtn=$("#admTakeFromUserBtn"), admGiveToMeBtn=$("#admGiveToMeBtn"), admBankCreditBtn=$("#admBankCreditBtn"), admBankDebitBtn=$("#admBankDebitBtn"), admHardResetBtn=$("#admHardResetBtn");
+  const adminBtn=$("#adminBtn"), adminModal=$("#adminModal"), adminClose=$("#adminClose"), bankBalanceLabel=$("#bankBalanceLabel"), admAmount=$("#admAmount"), admBankCreditBtn=$("#admBankCreditBtn"), admBankDebitBtn=$("#admBankDebitBtn"), admTopResetBtn=$("#admTopResetBtn"), admHardResetBtn=$("#admHardResetBtn"), admFilter=$("#admFilter"), admRefresh=$("#admRefresh"), adminUsersTBody=$("#adminUsers");
 
-  const slotBtn=$("#slotBtn"), slotModal=$("#slotModal"), slotClose=$("#slotClose"), slotSpin=$("#slotSpin"), slotAuto10=$("#slotAuto10"), slotBetSel=$("#slotBet"), slotBalanceEl=$("#slotBalance"), slotWinsTotalEl=$("#slotWinsTotal"), slotWinEl=$("#slotWin"), reelsEl=$("#reels"), lbEl=$("#lb"), slotRulesBtn=$("#slotRules"), slotLoanBtn=$("#slotLoanBtn"), lbQuick=$("#lbQuick"), slotBankBalance=$("#slotBankBalance");
+  const slotBtn=$("#slotBtn"), slotModal=$("#slotModal"), slotClose=$("#slotClose"), slotSpin=$("#slotSpin"), slotAuto10=$("#slotAuto10"), slotBetSel=$("#slotBet"), slotBalanceEl=$("#slotBalance"), slotWinsTotalEl=$("#slotWinsTotal"), slotWinEl=$("#slotWin"), reelsEl=$("#reels"), lbEl=$("#lb"), slotRulesBtn=$("#slotRules"), bankBtn=$("#bankBtn"), lbQuick=$("#lbQuick"), slotBankBalance=$("#slotBankBalance");
 
-  // === Global state ===
-  let me=null, activeThreadId=null, activePeer=null, messagesUnsub=null, threadsUnsub=null;
+  // === State ===
+  let me=null, activeThreadId=null, activePeer=null, messagesUnsub=null, threadsUnsub=null, lbUnsub=null, adminUsersUnsub=null;
   let recorder=null, recChunks=[], isRecording=false;
   let adminUnlocked=false;
 
-  // === Start with login visible unless user opted to stay signed in ===
+  // Keep login unless opted-in
   const stayPref = localStorage.getItem("staySignedIn") === "1";
   (async ()=>{ if(!stayPref){ try{ await auth.signOut(); }catch(e){} showView("authView"); } })();
 
@@ -419,7 +486,7 @@
       localStorage.setItem("staySignedIn", staySignedIn.checked ? "1" : "0");
       toast("Angemeldet.");
       setTimeout(checkAdminUnlockFlow, 200);
-    }catch(e){ console.error(e); toast(e.message||"Login fehlgeschlagen"); }
+    }catch(e){ console.error(e); toast((e && (e.code||e.message)) || "Login fehlgeschlagen"); }
   });
   registerBtn.addEventListener("click", async ()=>{
     try{
@@ -428,7 +495,7 @@
       await auth.createUserWithEmailAndPassword(email, pass);
       localStorage.setItem("staySignedIn", staySignedIn.checked ? "1" : "0");
       toast("Konto erstellt – bitte Profil anlegen und speichern.");
-    }catch(e){ console.error(e); toast(e.message||"Registrierung fehlgeschlagen"); }
+    }catch(e){ console.error(e); toast((e && (e.code||e.message)) || "Registrierung fehlgeschlagen"); }
   });
   logoutBtn.addEventListener("click", async ()=>{ try{ await auth.signOut(); localStorage.setItem("staySignedIn","0"); }catch(e){} showView("authView"); });
 
@@ -444,33 +511,29 @@
     }
   }
 
-  let stateTimer=null;
   auth.onAuthStateChanged(async (user)=>{
-    if(stateTimer) clearTimeout(stateTimer);
-    stateTimer=setTimeout(async ()=>{
-      try{
-        // Global mustRecreate gate (ALLOW new accounts after reset)
-        const cfg = await getAppConfig();
-        if(cfg && cfg.mustRecreate && user && user.email !== OWNER_EMAIL){
-          const createdMs = (user.metadata && user.metadata.creationTime) ? Date.parse(user.metadata.creationTime) : 0;
-          const resetMs = (typeof cfg.resetEpoch === 'number') ? cfg.resetEpoch : 0;
-          // If account was created BEFORE the reset, force re-register; otherwise allow
-          if(resetMs && createdMs && createdMs < resetMs){
-            try{ await auth.signOut(); }catch(e){}
-            showView('authView'); toast('System-Reset aktiv – bitte neu registrieren.');
-            return;
-          }
+    try{
+      const cfg = await getAppConfig();
+      if(cfg && cfg.mustRecreate && user && user.email !== OWNER_EMAIL){
+        const createdMs = (user.metadata && user.metadata.creationTime) ? Date.parse(user.metadata.creationTime) : 0;
+        const resetMs = (typeof cfg.resetEpoch === 'number') ? cfg.resetEpoch : 0;
+        if(resetMs && createdMs && createdMs < resetMs){
+          try{ await auth.signOut(); }catch(e){}
+          showView('authView'); toast('System-Reset aktiv – bitte neu registrieren.');
+          return;
         }
-        if(!user){ showView('authView'); return; }
-        const doc=await db.collection('users').doc(user.uid).get();
-        me = doc.exists ? doc.data() : null;
-        if(!me){ showView('profileView'); }
-        else { showView('appView'); renderMe(me); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) checkAdminUnlockFlow(); }
-      }catch(err){
-        console.error(err); try{ await auth.signOut(); }catch(e){}
-        showView('authView');
       }
-    }, 120);
+      if(!user){ showView('authView'); return; }
+      const doc=await db.collection('users').doc(user.uid).get();
+      me = doc.exists ? doc.data() : null;
+      if(!me){ showView('profileView'); }
+      else {
+        showView('appView'); renderMe(me); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) checkAdminUnlockFlow(); subscribeLeaderboards();
+      }
+    }catch(err){
+      console.error(err); try{ await auth.signOut(); }catch(e){}
+      showView('authView');
+    }
   });
 
   // === Profile ===
@@ -485,10 +548,10 @@
       const birthday=birthdayInput.value||null; const about=(aboutInput.value||'').trim()||null;
       let photoURL=null; const f=profilePhotoInput.files?.[0]||null;
       if(f){ try{ const ext=(f.name.split('.').pop()||'jpg'); const ref=storage.ref().child(`pfp/${user.uid}.${ext}`); await ref.put(f); photoURL=await ref.getDownloadURL(); }catch(e){ console.warn('Bild-Upload fehlgeschlagen',e); } }
-      const profile={ uid:user.uid, email:user.email||null, name, birthday, about, photoURL:photoURL||null, slotBalance:500, slotWinsTotal:0, slotLoanTotal:0, createdAt:firebase.firestore.FieldValue.serverTimestamp(), updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
+      const profile={ uid:user.uid, email:user.email||null, name, nameLower:name.toLowerCase(), birthday, about, photoURL:photoURL||null, slotBalance:1500, slotWinsTotal:0, slotLoanOutstanding:0, slotLoanWeekKey:null, slotLoanWeekAmount:0, createdAt:firebase.firestore.FieldValue.serverTimestamp(), updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
       await db.collection('users').doc(user.uid).set(profile,{merge:true});
       me={...(me||{}),...profile};
-      renderMe(me); showView('appView'); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) checkAdminUnlockFlow();
+      renderMe(me); showView('appView'); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) checkAdminUnlockFlow(); subscribeLeaderboards();
       toast('Profil gespeichert.');
     }catch(e){ console.error(e); toast('Konnte Profil nicht speichern.'); }
   });
@@ -524,7 +587,7 @@
     return id;
   }
   async function findUserByEmail(email){ const q=await db.collection('users').where('email','==', email).limit(1).get(); if(q.empty) return null; return q.docs[0].data(); }
-  async function findUserByName(nameLower){ const q=await db.collection('users').orderBy('name').startAt(nameLower).endAt(nameLower + '\uf8ff').limit(5).get(); if(q.empty) return null; return q.docs[0].data(); }
+  async function findUserByName(nameQ){ const q=await db.collection('users').orderBy('nameLower').startAt(nameQ.toLowerCase()).endAt(nameQ.toLowerCase()+'\uf8ff').limit(5).get(); if(q.empty) return null; return q.docs[0].data(); }
   async function openThread(threadId,peer){
     activeThreadId=threadId; activePeer=peer;
     peerPhoto.src=peer.photoURL||('https://ui-avatars.com/api/?name='+encodeURIComponent(peer.name||'?'));
@@ -549,7 +612,7 @@
 
   startChatBtn.addEventListener('click', async ()=>{
     const email=(searchEmail.value||'').trim().toLowerCase();
-    const name=(searchName.value||'').trim().toLowerCase();
+    const name=(searchName.value||'').trim();
     let peer=null;
     if(email){ peer = await findUserByEmail(email); }
     if(!peer && name){ peer = await findUserByName(name); }
@@ -576,7 +639,7 @@
     const user=auth.currentUser; if(!user||!activeThreadId) return;
     const msg={senderId:user.uid,text:text||null,imageUrl:imageUrl||null,audioUrl:audioUrl||null,ts:firebase.firestore.FieldValue.serverTimestamp(),type:type||(imageUrl?'image':audioUrl?'audio':'text')};
     const ref=db.collection('threads').doc(activeThreadId).collection('messages').doc(); await ref.set(msg);
-    await db.collection('threads').doc(activeThreadId).set({lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageText:text||(imageUrl?'🖼️ Bild':audioUrl?'🎤 Sprachnotiz':''),lastMessageType:msg.type},{merge:true});
+    await db.collection('threads').doc(activeThreadId).set({lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageText=text||(imageUrl?'🖼️ Bild':audioUrl?'🎤 Sprachnotiz':''),lastMessageType:msg.type},{merge:true});
   }
 
   // === Economy & Bank ===
@@ -625,30 +688,73 @@
       for(; i<SYM_WEIGHTS.length; i++){ if((r-=SYM_WEIGHTS[i])<0) break; }
       return SYMS[i] || SYMS[0];
     };
-    for(let c=0;c<3;c++){
-      for(let r=0;r<3;r++){
-        g[r][c]=pick();
-      }
-    }
+    for(let c=0;c<3;c++){ for(let r=0;r<3;r++){ g[r][c]=pick(); } }
     return g;
   }
   function isFullScreen(grid){ const f=grid[0][0]; for(let r=0;r<3;r++){ for(let c=0;c<3;c++){ if(grid[r][c]!==f) return false; } } return true; }
 
-  slotBtn.addEventListener('click', async ()=>{ await loadEconomy(); buildReelsGrid(randomGrid()); slotWinEl.textContent=fmtEUR(0); slotModal.classList.remove('hidden'); renderLeaderboard(); });
+  slotBtn.addEventListener('click', async ()=>{ await loadEconomy(); buildReelsGrid(randomGrid()); slotWinEl.textContent=fmtEUR(0); slotModal.classList.remove('hidden'); });
   slotClose.addEventListener('click', ()=>{ autospinLeft=0; slotModal.classList.add('hidden'); });
   slotRulesBtn.addEventListener('click', ()=>{
     alert('Regeln:\\n- 5 Gewinnlinien (rechts→links): 3 Reihen + 2 Diagonalen.\\n- Nur 3 gleiche AUF EINER LINIE (keine Spalten, keine 2er).\\n- Linien addieren sich. Einsatz 10–100 skaliert Gewinn.\\n- 1 sanfter Re-Spin nach einer 3er-Linie; Vollbild sehr selten.\\n- Vollbild: Baseline €1000 (bei Einsatz 10).');
   });
+  bankBtn.addEventListener('click', async ()=>{ await refreshBankInfo(); bankModal.classList.remove('hidden'); });
+  const bankModal=document.getElementById('bankModal'), bankClose=document.getElementById('bankClose'), loanAmount=document.getElementById('loanAmount'), loanDo=document.getElementById('loanDo'), loanInfo=document.getElementById('loanInfo'), repayAmount=document.getElementById('repayAmount'), repayDo=document.getElementById('repayDo'), repayInfo=document.getElementById('repayInfo');
+  bankClose.addEventListener('click', ()=> bankModal.classList.add('hidden'));
+
+  async function refreshBankInfo(){
+    const user=auth.currentUser; if(!user) return;
+    const u=(await db.collection('users').doc(user.uid).get()).data()||{};
+    const wk = isoWeekKey(new Date());
+    const weekAmt = (u.slotLoanWeekKey===wk) ? (u.slotLoanWeekAmount||0) : 0;
+    const remainWeek = clamp(10000 - weekAmt, 0, 10000);
+    const outstanding = Math.max(0, u.slotLoanOutstanding||0);
+    loanInfo.textContent = `Verfügbar diese Woche: ${fmtEUR(remainWeek)} · Offen: ${fmtEUR(outstanding)}`;
+    repayInfo.textContent = `Offen: ${fmtEUR(outstanding)} · Dein Guthaben: ${fmtEUR(slotBalance)}`;
+    const bank=await getBankDoc(); slotBankBalance.textContent=fmtEUR(bank.bankBalance||0); bankBalanceLabel.textContent=fmtEUR(bank.bankBalance||0);
+  }
+
+  loanDo.addEventListener('click', async ()=>{
+    const user=auth.currentUser; if(!user) return;
+    let amt = Math.floor(+loanAmount.value||0); if(amt<=0){ toast('Betrag eingeben.'); return; }
+    const uref = db.collection('users').doc(user.uid);
+    const uSnap = await uref.get(); const u = uSnap.data()||{};
+    const wk = isoWeekKey(new Date());
+    const weekAmt = (u.slotLoanWeekKey===wk) ? (u.slotLoanWeekAmount||0) : 0;
+    const weeklyLeft = Math.max(0, 10000 - weekAmt);
+    let outstanding = Math.max(0, u.slotLoanOutstanding||0);
+    if(outstanding >= 100000){ toast('Limit erreicht (100.000 € offen). Bitte zuerst mind. 10% zurückzahlen.'); return; }
+    const maxByOutstanding = 100000 - outstanding;
+    let allowed = Math.min(amt, weeklyLeft, maxByOutstanding);
+    if(allowed<=0){ toast('Diese Woche kein Leihrahmen mehr verfügbar.'); return; }
+    const bank = await getBankDoc();
+    if((bank.bankBalance||0) < allowed){ toast('Bank hat aktuell nicht genug Guthaben.'); return; }
+    // apply
+    outstanding += allowed;
+    const newWeekAmt = weekAmt + allowed;
+    slotBalance += allowed;
+    await uref.set({ slotLoanOutstanding: outstanding, slotLoanWeekKey: wk, slotLoanWeekAmount: newWeekAmt, slotBalance }, { merge:true });
+    await setBankBalance((bank.bankBalance||0)-allowed);
+    await refreshBankInfo(); updateEconomyUI(); toast('Leihe ausgezahlt: '+fmtEUR(allowed));
+  });
+
+  repayDo.addEventListener('click', async ()=>{
+    const user=auth.currentUser; if(!user) return;
+    let amt = Math.floor(+repayAmount.value||0); if(amt<=0){ toast('Betrag eingeben.'); return; }
+    const uref = db.collection('users').doc(user.uid);
+    const u = (await uref.get()).data()||{};
+    let outstanding = Math.max(0, u.slotLoanOutstanding||0);
+    if(outstanding<=0){ toast('Keine offenen Leihen.'); return; }
+    amt = Math.min(amt, outstanding, slotBalance);
+    if(amt<=0){ toast('Nicht genug Guthaben zum Zurückzahlen.'); return; }
+    slotBalance -= amt; outstanding -= amt;
+    await uref.set({ slotLoanOutstanding: outstanding, slotBalance }, { merge:true });
+    const bank = await getBankDoc(); await setBankBalance((bank.bankBalance||0)+amt);
+    await refreshBankInfo(); updateEconomyUI(); toast('Zurückgezahlt: '+fmtEUR(amt));
+  });
+
   slotSpin.addEventListener('click', async ()=>{ autospinLeft=0; await triggerSpin(); });
   slotAuto10.addEventListener('click', async ()=>{ if(spinning) return; autospinLeft=10; await triggerSpin(); });
-  slotLoanBtn.addEventListener('click', async ()=>{
-    const amtStr = prompt('Wie viel € leihen? (max. 10000)'); if(!amtStr) return;
-    let amt = Math.max(0, Math.floor(+amtStr||0)); if(amt<=0) return; if(amt>10000) amt=10000;
-    const bank = await getBankDoc(); if((bank.bankBalance||0) < amt){ toast('Bank kann aktuell nicht so viel auszahlen.'); return; }
-    slotBalance += amt; await saveEconomy();
-    await setBankBalance((bank.bankBalance||0)-amt); slotBankBalance.textContent=fmtEUR((bank.bankBalance||0)-amt); bankBalanceLabel.textContent=fmtEUR((bank.bankBalance||0)-amt);
-    toast('Leihe ausgezahlt: '+fmtEUR(amt));
-  });
 
   async function triggerSpin(){
     if(spinning) return;
@@ -695,7 +801,6 @@
     }
     slotWinEl.textContent=fmtEUR(win);
     spinning=false; slotSpin.disabled=false;
-    renderLeaderboard();
     if(autospinLeft>0){
       autospinLeft--;
       const nextBet=parseInt(slotBetSel.value||'10',10);
@@ -703,22 +808,41 @@
     }
   }
 
-  async function renderLeaderboard(){ try{ const q=await db.collection('users').orderBy('slotWinsTotal','desc').limit(10).get(); lbEl.innerHTML=''; let i=1; q.forEach(doc=>{ const u=doc.data(); const row=document.createElement('div'); row.className='row'; row.innerHTML=`<div>#${i}</div><div>${u.name||'Anonym'}</div><div>${fmtEUR(u.slotWinsTotal||0)}</div>`; lbEl.appendChild(row); i++; }); }catch(e){ lbEl.innerHTML='<div class="row"><div>Topliste erscheint, sobald Gewinne vorhanden sind.</div></div>'; } }
-  async function renderLeaderboardQuick(){ try{ const q=await db.collection('users').orderBy('slotWinsTotal','desc').limit(10).get(); lbQuick.innerHTML=''; let i=1; q.forEach(doc=>{ const u=doc.data(); const row=document.createElement('div'); row.className='row'; row.innerHTML=`<div>#${i}</div><div>${u.name||'Anonym'}</div><div>${fmtEUR(u.slotWinsTotal||0)}</div>`; lbQuick.appendChild(row); i++; }); }catch(e){ lbQuick.innerHTML='<div class="row"><div>Topliste erscheint, sobald Gewinne vorhanden sind.</div></div>'; } }
+  // === Live Toplist ===
+  function subscribeLeaderboards(){
+    if(lbUnsub) lbUnsub();
+    lbUnsub = db.collection('users').orderBy('slotWinsTotal','desc').limit(10).onSnapshot(snap=>{
+      const rows = [];
+      let i=1;
+      snap.forEach(doc=>{
+        const u=doc.data();
+        rows.push(`<div class="row"><div>#${i}</div><div>${(u.name||'Anonym')}</div><div>${fmtEUR(u.slotWinsTotal||0)}</div></div>`);
+        i++;
+      });
+      if(rows.length===0){
+        lbEl.innerHTML = '<div class="row"><div>Topliste erscheint, sobald Gewinne vorhanden sind.</div></div>';
+        lbQuick.innerHTML = lbEl.innerHTML;
+      } else {
+        lbEl.innerHTML = rows.join('');
+        lbQuick.innerHTML = rows.join('');
+      }
+    });
+  }
 
   // === Search modal ===
   openSearchBtn.addEventListener('click', ()=>{ searchModal.classList.remove('hidden'); searchResults.innerHTML=''; });
   searchClose.addEventListener('click', ()=> searchModal.classList.add('hidden'));
   searchRunBtn.addEventListener('click', async ()=>{
-    const name=(searchNameModal.value||'').trim().toLowerCase();
+    const name=(searchNameModal.value||'').trim();
     const email=(searchEmailModal.value||'').trim().toLowerCase();
     let out=[];
     if(email){ const u=await findUserByEmail(email); if(u) out.push(u); }
     if(name){
-      const q=await db.collection('users').orderBy('name').startAt(name).endAt(name+'\uf8ff').limit(10).get();
+      const q=await db.collection('users').orderBy('nameLower').startAt(name.toLowerCase()).endAt(name.toLowerCase()+'\uf8ff').limit(20).get();
       q.forEach(d=> out.push(d.data()));
     }
     if(out.length===0){ searchResults.innerHTML='<div class="kpi">Nichts gefunden.</div>'; return; }
+    const seen = new Set(); out = out.filter(u=>{ if(seen.has(u.uid)) return false; seen.add(u.uid); return true; });
     searchResults.innerHTML = out.map(u=>`<div class="kpi" data-uid="${u.uid}" data-email="${u.email||''}" data-name="${u.name||''}">${u.name||'Anonym'} — ${u.email||''}</div>`).join('');
     Array.from(searchResults.children).forEach(el=>{ el.addEventListener('click', ()=>{ searchResults.querySelectorAll('.kpi').forEach(k=>k.style.outline=''); el.style.outline='2px solid #34b7f1'; searchResults.setAttribute('data-selected-uid', el.getAttribute('data-uid')); }); });
   });
@@ -733,15 +857,32 @@
     const user=auth.currentUser;
     if(!user || user.email!==OWNER_EMAIL){ toast('Kein Admin.'); return; }
     const code=prompt('Admin-Code eingeben:');
-    if(code===OWNER_ADMIN_CODE){ adminUnlocked=true; adminModal.classList.remove('hidden'); refreshAdmin(); } else { toast('Falscher Code.'); }
+    if(code===OWNER_ADMIN_CODE){ adminUnlocked=true; adminModal.classList.remove('hidden'); refreshAdmin(); startAdminUsersList(); } else { toast('Falscher Code.'); }
   });
-  adminClose.addEventListener('click', ()=> adminModal.classList.add('hidden'));
+  adminClose.addEventListener('click', ()=>{ adminModal.classList.add('hidden'); stopAdminUsersList(); });
   async function refreshAdmin(){ const bank=await getBankDoc(); bankBalanceLabel.textContent=fmtEUR(bank.bankBalance||0); }
-  admGiveToUserBtn.addEventListener('click', async ()=>{ if(!adminUnlocked) return; const email=(admEmail.value||'').trim().toLowerCase(); const amt=Math.floor(+admAmount.value||0); if(!email || amt<=0){ toast('E-Mail & Betrag angeben.'); return; } const q=await db.collection('users').where('email','==',email).limit(1).get(); if(q.empty){ toast('Nutzer nicht gefunden.'); return; } const ref=q.docs[0].ref; const d=q.docs[0].data(); await ref.set({ slotBalance:(d.slotBalance||0)+amt },{merge:true}); toast('Guthaben vergeben.'); });
-  admTakeFromUserBtn.addEventListener('click', async ()=>{ if(!adminUnlocked) return; const email=(admEmail.value||'').trim().toLowerCase(); const amt=Math.floor(+admAmount.value||0); if(!email || amt<=0){ toast('E-Mail & Betrag angeben.'); return; } const q=await db.collection('users').where('email','==',email).limit(1).get(); if(q.empty){ toast('Nutzer nicht gefunden.'); return; } const ref=q.docs[0].ref; const d=q.docs[0].data(); await ref.set({ slotBalance:Math.max(0,(d.slotBalance||0)-amt) },{merge:true}); toast('Guthaben abgezogen.'); });
-  admGiveToMeBtn.addEventListener('click', async ()=>{ if(!adminUnlocked) return; const amt=Math.floor(+admAmount.value||0); if(amt<=0){ toast('Betrag angeben.'); return; } const ref=db.collection('users').doc(auth.currentUser.uid); const snap=await ref.get(); await ref.set({ slotBalance:(snap.data()?.slotBalance||0)+amt },{merge:true}); toast('Dir gutgeschrieben.'); });
-  admBankCreditBtn.addEventListener('click', async ()=>{ if(!adminUnlocked) return; const amt=Math.floor(+admAmount.value||0); if(amt<=0){ toast('Betrag angeben.'); return; } const bank=await getBankDoc(); await setBankBalance((bank.bankBalance||0)+amt); await refreshAdmin(); slotBankBalance.textContent=fmtEUR((bank.bankBalance||0)+amt); toast('Bank + Betrag.'); });
+  admBankCreditBtn.addEventListener('click', async ()=>{ if(!adminUnlocked) return; const amt=Math.floor(+admAmount.value||0); if(amt<=0){ toast('Betrag angeben.'); return; } const bank=await getBankDoc(); await setBankBalance((bank.bankBalance||0)+amt); await refreshAdmin(); toast('Bank + Betrag.'); });
   admBankDebitBtn.addEventListener('click', async ()=>{ if(!adminUnlocked) return; const amt=Math.floor(+admAmount.value||0); if(amt<=0){ toast('Betrag angeben.'); return; } const bank=await getBankDoc(); await setBankBalance(Math.max(0,(bank.bankBalance||0)-amt)); await refreshAdmin(); toast('Bank − Betrag.'); });
+
+  // Manual Toplist Reset
+  admTopResetBtn.addEventListener('click', async ()=>{
+    if(!adminUnlocked) return;
+    if(!confirm('Topliste (Gesamtgewinne) für alle Nutzer auf 0 setzen?')) return;
+    try{
+      const snap = await db.collection('users').get();
+      let batch = db.batch(); let count=0;
+      snap.forEach(doc=>{
+        batch.set(doc.ref, { slotWinsTotal: 0 }, { merge:true });
+        count++; if(count % 400 === 0){ batch.commit(); batch = db.batch(); }
+      });
+      await batch.commit();
+      const wk = isoWeekKey(new Date());
+      await db.collection('app').doc('config').set({ lastToplistResetWeek: wk, lastToplistResetTs: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+      toast('Topliste manuell zurückgesetzt.');
+    }catch(e){
+      console.error(e); toast('Fehler beim Zurücksetzen der Topliste.');
+    }
+  });
 
   // Hard Reset
   admHardResetBtn.addEventListener('click', async ()=>{
@@ -760,20 +901,89 @@
         const d = doc.data();
         const isOwner = (d.email && d.email.toLowerCase() === OWNER_EMAIL.toLowerCase());
         if(isOwner){
-          batch.set(doc.ref, { slotBalance:1500, slotWinsTotal:0, slotLoanTotal:0, updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+          batch.set(doc.ref, { slotBalance:1500, slotWinsTotal:0, slotLoanOutstanding:0, slotLoanWeekKey:null, slotLoanWeekAmount:0, updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
         } else {
           batch.delete(doc.ref);
         }
         ops++; if(ops % 400 === 0){ batch.commit(); batch = db.batch(); }
       });
-      await batch.commit();
-      await refreshAdmin();
-      toast('Hard Reset abgeschlossen.');
+      await batch.commit(); await refreshAdmin(); toast('Hard Reset abgeschlossen.');
     }catch(e){ console.error(e); toast('Fehler beim Hard Reset.'); }
   });
 
-  // === Toplist quick ===
-  openTopBtn.addEventListener('click', async ()=>{ await renderLeaderboardQuick(); topModal.classList.remove('hidden'); });
+  function startAdminUsersList(){
+    stopAdminUsersList();
+    adminUsersUnsub = db.collection('users').orderBy('nameLower').limit(200).onSnapshot(snap=>{
+      const filter=(admFilter.value||'').trim().toLowerCase();
+      const rows=[];
+      snap.forEach(doc=>{
+        const u=doc.data();
+        if(filter && !((u.name||'').toLowerCase().includes(filter) || (u.email||'').toLowerCase().includes(filter))) return;
+        rows.push(`<tr data-uid="${u.uid}">
+          <td>${u.name||'Anonym'}</td>
+          <td>${u.email||''}</td>
+          <td>${fmtEUR(u.slotBalance||0)}</td>
+          <td>${fmtEUR(u.slotWinsTotal||0)}</td>
+          <td>${fmtEUR(u.slotLoanOutstanding||0)}</td>
+          <td class="actions">
+            <button class="btn secondary" data-act="give">Geben</button>
+            <button class="btn secondary" data-act="take">Abziehen</button>
+            <button class="btn danger" data-act="delete">Löschen</button>
+          </td>
+        </tr>`);
+      });
+      adminUsersTBody.innerHTML = rows.join('') || '<tr><td colspan="6">Keine Nutzer gefunden.</td></tr>';
+      // Bind actions
+      adminUsersTBody.querySelectorAll('button').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const tr=btn.closest('tr'); const uid=tr.getAttribute('data-uid'); const act=btn.getAttribute('data-act');
+          if(act==='give') return adminGive(uid);
+          if(act==='take') return adminTake(uid);
+          if(act==='delete') return adminDelete(uid);
+        });
+      });
+    });
+  }
+  function stopAdminUsersList(){ if(adminUsersUnsub){ adminUsersUnsub(); adminUsersUnsub=null; } }
+  admRefresh.addEventListener('click', ()=> startAdminUsersList());
+  admFilter.addEventListener('input', ()=> startAdminUsersList());
+
+  async function adminGive(uid){
+    if(!adminUnlocked) return;
+    const amountStr = prompt('Betrag dem Nutzer geben (€):'); if(!amountStr) return;
+    const amount = Math.max(0, Math.floor(+amountStr||0)); if(amount<=0) return;
+    const bank=await getBankDoc(); if((bank.bankBalance||0) < amount){ toast('Bank hat nicht genug Guthaben.'); return; }
+    const ref=db.collection('users').doc(uid); const snap=await ref.get(); if(!snap.exists){ toast('Nutzer nicht gefunden.'); return; }
+    const bal = Math.max(0, snap.data().slotBalance||0);
+    await ref.set({ slotBalance: bal + amount }, { merge:true });
+    await setBankBalance((bank.bankBalance||0)-amount);
+    await refreshAdmin(); toast('Guthaben vergeben: '+fmtEUR(amount));
+  }
+  async function adminTake(uid){
+    if(!adminUnlocked) return;
+    const amountStr = prompt('Betrag beim Nutzer abziehen (€):'); if(!amountStr) return;
+    const amount = Math.max(0, Math.floor(+amountStr||0)); if(amount<=0) return;
+    const ref=db.collection('users').doc(uid); const snap=await ref.get(); if(!snap.exists){ toast('Nutzer nicht gefunden.'); return; }
+    const bal = Math.max(0, snap.data().slotBalance||0);
+    const take = Math.min(amount, bal);
+    if(take<=0){ toast('Kein Guthaben vorhanden.'); return; }
+    await ref.set({ slotBalance: bal - take }, { merge:true });
+    const bank=await getBankDoc(); await setBankBalance((bank.bankBalance||0)+take); await refreshAdmin();
+    toast('Abgezogen: '+fmtEUR(take));
+  }
+  async function adminDelete(uid){
+    if(!adminUnlocked) return;
+    if(!confirm('Nutzer wirklich löschen? Guthaben geht an die Bank zurück.')) return;
+    const ref=db.collection('users').doc(uid); const snap=await ref.get(); if(!snap.exists){ toast('Nutzer nicht gefunden.'); return; }
+    const d=snap.data(); if(d.email && d.email.toLowerCase()===OWNER_EMAIL.toLowerCase()){ toast('Admin kann nicht gelöscht werden.'); return; }
+    const bal = Math.max(0, d.slotBalance||0);
+    const bank=await getBankDoc(); await setBankBalance((bank.bankBalance||0)+bal);
+    await ref.delete(); await refreshAdmin();
+    toast('Nutzer gelöscht. Guthaben an Bank zurück.');
+  }
+
+  // === Live Toplist quick modal ===
+  openTopBtn.addEventListener('click', ()=>{ topModal.classList.remove('hidden'); });
   topClose.addEventListener('click', ()=> topModal.classList.add('hidden'));
 
   // Defaults
