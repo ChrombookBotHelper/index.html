@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Chatty – Mini‑Messenger (WhatsApp‑Style)</title>
+  <title>Chatty – Mini-Messenger (Slot + Punkte)</title>
   <meta name="theme-color" content="#075E54">
   <style>
     :root{
@@ -19,6 +19,7 @@
       --bubble-shadow:0 1px 1px rgba(0,0,0,.1);
       --danger:#e53935;
       --ok:#2e7d32;
+      --border:#0a1014;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -29,6 +30,7 @@
       color:var(--text);
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
+      overflow-x:hidden;
     }
     a { color: #34b7f1; text-decoration: none; }
     .hidden{display:none !important}
@@ -71,8 +73,9 @@
       max-width:1400px;
       margin:0 auto;
       background:var(--panel);
-      border-left:1px solid #0a1014;
-      border-right:1px solid #0a1014;
+      border-left:1px solid var(--border);
+      border-right:1px solid var(--border);
+      overflow:hidden;
     }
     .header{
       grid-area:header;
@@ -81,15 +84,22 @@
       align-items:center;
       gap:.75rem;
       padding:.5rem .75rem;
-      border-left:1px solid #0a1014;
+      border-left:1px solid var(--border);
+      position:relative;
     }
     .header img.pfp{ width:40px; height:40px; border-radius:50%; object-fit:cover }
     .header .title{ font-weight:700 }
     .header .subtitle{ font-size:.85rem; color:var(--muted) }
+    .header .right{ margin-left:auto; display:flex; align-items:center; gap:.4rem; }
+    .icon-btn{
+      width:40px; height:40px; display:grid; place-items:center;
+      background:#22333a; border-radius:50%; cursor:pointer; border:1px solid #2a3942;
+    }
+    .icon-btn svg{ width:22px; height:22px; fill:#cfd8dc }
 
     .sidebar{
       grid-area:sidebar;
-      border-right:1px solid #0a1014;
+      border-right:1px solid var(--border);
       background:var(--panel);
       display:flex;
       flex-direction:column;
@@ -101,9 +111,12 @@
     }
     .sidebar .me-row{ display:flex; align-items:center; gap:.75rem }
     .sidebar img.pfp{ width:40px; height:40px; border-radius:50%; object-fit:cover }
-    .sidebar .list{
-      overflow:auto;
+    .sidebar .list{ overflow:auto; }
+    .start-chat{
+      padding:.75rem; border-top:1px solid var(--border); background:var(--panel-light);
+      display:flex; gap:.5rem;
     }
+
     .chat{
       grid-area:chat;
       background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path fill="%231d282f" d="M0 0h60v60H0z"/><circle cx="10" cy="10" r="2" fill="%23202c33"/><circle cx="40" cy="30" r="1.5" fill="%23202c33"/><circle cx="25" cy="50" r="1.2" fill="%23202c33"/></svg>') repeat;
@@ -122,6 +135,7 @@
       flex-direction:column;
       gap:.35rem;
       line-height:1.3;
+      word-break: break-word;
     }
     .bubble.me{ align-self:flex-end; background:var(--me) }
     .bubble.them{ align-self:flex-start; background:var(--them) }
@@ -136,38 +150,27 @@
       align-items:center;
       gap:.5rem;
       padding:.5rem;
-      border-left:1px solid #0a1014;
+      border-left:1px solid var(--border);
     }
     .composer .grow{ flex:1 }
     .composer input[type="file"]{ display:none }
-    .icon-btn{
-      width:44px; height:44px; display:grid; place-items:center;
-      background:#22333a; border-radius:50%; cursor:pointer; border:1px solid #2a3942;
-    }
-    svg{ width:22px; height:22px; fill:#cfd8dc }
 
     .chat-item{
       display:flex; gap:.6rem; padding:.6rem .75rem; cursor:pointer; align-items:center;
-      border-bottom:1px solid #0a1014;
+      border-bottom:1px solid var(--border);
     }
     .chat-item:hover{ background:#172229 }
     .chat-item .meta{ display:flex; justify-content:space-between; width:100% }
     .chat-item .name{ font-weight:600; }
     .chat-item .last{ color:var(--muted); font-size:.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 160px; }
     .chat-item .time{ color:var(--muted); font-size:.75rem }
-    .start-chat{
-      padding:.75rem; border-top:1px solid #0a1014; background:var(--panel-light);
-      display:flex; gap:.5rem;
-    }
 
     /* auth/profile cards */
-    .center-wrap{
-      min-height:100vh; display:grid; place-items:center; padding:1rem;
-    }
+    .center-wrap{ min-height:100vh; display:grid; place-items:center; padding:1rem; }
     .card{
       width:min(480px, 95vw);
       background:var(--panel);
-      border:1px solid #0a1014;
+      border:1px solid var(--border);
       border-radius:16px;
       padding:1rem;
       box-shadow:0 8px 30px rgba(0,0,0,.35);
@@ -176,7 +179,6 @@
     .card p{ color:var(--muted) }
     .row{ display:flex; gap:.6rem }
     .row > *{ flex:1 }
-
     .pfp-lg{ width:84px; height:84px; border-radius:50%; object-fit:cover; background:#2a3942; display:block }
     .inline-help{ font-size:.85rem; color:var(--muted) }
 
@@ -198,6 +200,30 @@
       border:1px solid #2a3942; box-shadow:var(--bubble-shadow);
       z-index:9999; display:none;
     }
+
+    /* ===== SLOT MODAL ===== */
+    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:grid; place-items:center; z-index:9998; padding:1rem; }
+    .sheet{ width:min(720px, 96vw); background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:1rem; box-shadow:0 16px 60px rgba(0,0,0,.55); }
+    .sheet header{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:.5rem; }
+    .sheet h2{ margin:0; font-size:1.2rem }
+    .slot-wrap{ background:linear-gradient(#172229, #0f171c); border:1px solid #23313a; border-radius:14px; padding:1rem; }
+    .reels{ display:grid; grid-template-columns: repeat(3, 1fr); gap:.75rem; margin:.5rem 0 1rem 0; }
+    .reel{ background:#11181d; border:1px solid #23313a; border-radius:12px; height:132px; overflow:hidden; position:relative; display:grid; place-items:center; }
+    .reel .cell{ font-size:34px; line-height:1; height:44px; display:grid; place-items:center; }
+    .slot-controls{ display:flex; gap:.5rem; align-items:center; flex-wrap:wrap }
+    .kpis{ display:flex; gap:1rem; flex-wrap:wrap; color:#cfe5d9; font-size:.95rem }
+    .kpi{ background:#172229; border:1px solid #23313a; border-radius:10px; padding:.5rem .75rem }
+    .leaderboard{ margin-top:1rem; }
+    .leaderboard h3{ margin:.75rem 0 .5rem 0; font-size:1rem }
+    .leaderboard .row{ display:flex; gap:.5rem; align-items:center; }
+    .leaderboard .row div{ padding:.4rem .5rem; background:#172229; border:1px solid #23313a; border-radius:8px }
+
+    /* ====== Logo area (neutral Sonne) ====== */
+    .logo{
+      width:32px; height:32px; border-radius:8px; display:grid; place-items:center;
+      background:#000; margin-right:.35rem; overflow:hidden;
+    }
+    .logo svg{ width:26px; height:26px; }
   </style>
 </head>
 <body>
@@ -206,20 +232,20 @@
 <section id="authView" class="center-wrap">
   <div class="card">
     <h1>📱 Anmeldung mit Telefonnummer</h1>
-    <p>Gib deine Nummer im internationalen Format ein (z. B. <b>+49...</b>).</p>
+    <p>Gib deine Nummer im internationalen Format ein (z. B. <b>+49...</b>).</p>
     <label class="label" for="phoneInput">Telefonnummer</label>
     <input id="phoneInput" class="input" placeholder="+49..." />
     <div id="recaptcha-container" style="margin:.75rem 0;"></div>
     <div class="row">
-      <button id="sendCodeBtn" class="btn">SMS‑Code senden</button>
-      <button id="demoLoginBtn" class="btn secondary" title="Nur zum Testen ohne SMS – entfernt einige Limits">Demo‑Login</button>
+      <button id="sendCodeBtn" class="btn">SMS-Code senden</button>
+      <button id="demoLoginBtn" class="btn secondary" title="Nur zum Testen ohne SMS – entfernt einige Limits">Demo-Login</button>
     </div>
     <div id="codeBox" class="hidden" style="margin-top:.75rem">
-      <label class="label" for="codeInput">Verifizierungs‑Code</label>
+      <label class="label" for="codeInput">Verifizierungs-Code</label>
       <input id="codeInput" class="input" placeholder="123456" />
       <button id="verifyBtn" class="btn" style="margin-top:.5rem">Bestätigen</button>
     </div>
-    <p class="inline-help">⚠️ Öffne diese Datei über <b>https://</b> (nicht <i>file://</i>). Aktiviere in Firebase Auth die <b>Telefon‑Anmeldung</b> und füge deine Domain unter <i>Autorisierte Domains</i> hinzu.</p>
+    <p class="inline-help">⚠️ Öffne diese Datei über <b>https://</b> (nicht <i>file://</i>). Aktiviere in Firebase Auth die <b>Telefon-Anmeldung</b> und füge deine Domain unter <i>Autorisierte Domains</i> hinzu.</p>
   </div>
 </section>
 
@@ -272,10 +298,42 @@
   </aside>
 
   <header class="header">
+    <div class="logo" title="App-Logo">
+      <!-- Neutral: einfache Sonne in weiß auf schwarzem Hintergrund -->
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" fill="#000"/>
+        <circle cx="50" cy="50" r="18" fill="#fff"/>
+        <!-- 12 einfache Strahlen -->
+        <g stroke="#fff" stroke-width="6" stroke-linecap="round">
+          <line x1="50" y1="6" x2="50" y2="22"/>
+          <line x1="50" y1="78" x2="50" y2="94"/>
+          <line x1="6" y1="50" x2="22" y2="50"/>
+          <line x1="78" y1="50" x2="94" y2="50"/>
+          <line x1="20" y1="20" x2="30" y2="30"/>
+          <line x1="70" y1="70" x2="80" y2="80"/>
+          <line x1="20" y1="80" x2="30" y2="70"/>
+          <line x1="70" y1="30" x2="80" y2="20"/>
+          <line x1="35" y1="8" x2="40" y2="22"/>
+          <line x1="65" y1="8" x2="60" y2="22"/>
+          <line x1="8" y1="35" x2="22" y2="40"/>
+          <line x1="92" y1="35" x2="78" y2="40"/>
+        </g>
+      </svg>
+    </div>
     <img id="peerPhoto" class="pfp" alt="Kontakt">
     <div>
       <div id="peerName" class="title">Wähle einen Chat</div>
       <div id="peerSubtitle" class="subtitle"></div>
+    </div>
+    <div class="right">
+      <!-- SLOT BUTTON -->
+      <button id="slotBtn" class="icon-btn" title="Mini-Slot (Triple Chance Style)">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-1v2h-2v-2H9v2H7v-2H6a3 3 0 0 1-3-3V7zM6 6a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H6zm1.5 2.3h3v6h-3v-6zm6 0h3v6h-3v-6z"/>
+          <text x="9" y="13.5" font-size="6" fill="#cfd8dc" font-family="monospace">7</text>
+          <text x="14.2" y="13.5" font-size="6" fill="#cfd8dc" font-family="monospace">7</text>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -296,48 +354,68 @@
   </div>
 </section>
 
+<!-- SLOT MODAL -->
+<div id="slotModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Mini Slot">
+  <div class="sheet">
+    <header>
+      <h2>🎰 Mini-Slot – Triple-Chance-Style (Fun & Punkte)</h2>
+      <div class="row" style="flex:0 0 auto">
+        <button id="slotClose" class="btn secondary">Schließen</button>
+      </div>
+    </header>
+    <div class="kpis">
+      <div class="kpi">Deine Punkte: <b id="slotPoints">0</b></div>
+      <div class="kpi">Letzter Gewinn: <b id="slotWin">0</b></div>
+      <div class="kpi">Vollbild (alle 9): <b>1000 Punkte</b></div>
+    </div>
+    <div class="slot-wrap">
+      <div id="reels" class="reels" aria-live="polite">
+        <!-- reels created by JS (3×3) -->
+      </div>
+      <div class="slot-controls">
+        <button id="slotSpin" class="btn">SPIN</button>
+        <button id="slotRules" class="btn secondary">Regeln</button>
+      </div>
+    </div>
+    <div class="leaderboard">
+      <h3>🏆 Top 10</h3>
+      <div id="lb"></div>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
-<!-- Firebase SDKs -->
+<!-- Firebase SDKs (compat for simplicity) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-storage-compat.js"></script>
 
 <script>
-  // === 1) INSERT YOUR FIREBASE CONFIG HERE ===
-  // Create a web app in Firebase Console and copy the config into this object.
+  // === Deine Firebase-Konfiguration (eingesetzt) ===
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDN1MZv_q38Zoymt92BHWTe9sUNwteT1KA",
+    authDomain: "sample-firebase-ai-app-b02a4.firebaseapp.com",
+    projectId: "sample-firebase-ai-app-b02a4",
+    storageBucket: "sample-firebase-ai-app-b02a4.firebasestorage.app",
+    messagingSenderId: "382050648468",
+    appId: "1:382050648468:web:8c6f34051a7b2991ebcf81"
   };
-  // ===========================================
+  // ================================================
 
-  // Initialize
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
   const storage = firebase.storage();
 
-  // UI helpers
   const $ = (sel) => document.querySelector(sel);
-  const toast = (msg, ms=2500) => {
-    const el = $("#toast");
-    el.textContent = msg;
-    el.style.display = "block";
-    setTimeout(()=> el.style.display = "none", ms);
-  }
+  const toast = (msg, ms=2500) => { const el = $("#toast"); el.textContent = msg; el.style.display="block"; setTimeout(()=> el.style.display="none", ms); };
 
-  // Views
   const authView = $("#authView");
   const profileView = $("#profileView");
   const appView = $("#appView");
 
-  // Auth elements
   const phoneInput = $("#phoneInput");
   const sendCodeBtn = $("#sendCodeBtn");
   const codeBox = $("#codeBox");
@@ -345,7 +423,6 @@
   const verifyBtn = $("#verifyBtn");
   const demoLoginBtn = $("#demoLoginBtn");
 
-  // Profile elements
   const profilePhotoInput = $("#profilePhotoInput");
   const profilePhotoPreview = $("#profilePhotoPreview");
   const displayNameInput = $("#displayName");
@@ -353,7 +430,6 @@
   const aboutInput = $("#about");
   const saveProfileBtn = $("#saveProfileBtn");
 
-  // App elements
   const mePhoto = $("#mePhoto");
   const meName = $("#meName");
   const mePhone = $("#mePhone");
@@ -374,9 +450,18 @@
   const msgInput = $("#msgInput");
   const sendBtn = $("#sendBtn");
 
-  // State
+  const slotBtn = $("#slotBtn");
+  const slotModal = $("#slotModal");
+  const slotClose = $("#slotClose");
+  const slotSpin = $("#slotSpin");
+  const slotPointsEl = $("#slotPoints");
+  const slotWinEl = $("#slotWin");
+  const reelsEl = $("#reels");
+  const lbEl = $("#lb");
+  const slotRulesBtn = $("#slotRules");
+
   let confirmationResult = null;
-  let me = null; // current user profile
+  let me = null;
   let activeThreadId = null;
   let activePeer = null;
   let messagesUnsub = null;
@@ -385,115 +470,72 @@
   let recChunks = [];
   let isRecording = false;
 
+  // ----- Slot state (3×3, Triple-Chance-Style) -----
+  const SYMS = ["🍒","🍋","🍇","🔔","⭐","7️⃣"];
+  const PAYLINE_WIN = 50; // 3 gleiche in einer Reihe
+  const FULLSCREEN_WIN = 1000; // alle 9 gleich
+  let slotPoints = 0;
+  let spinning = false;
+
   // Recaptcha
   let recaptchaVerifier = null;
   const setupRecaptcha = () => {
     try {
       if (recaptchaVerifier) return;
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-        size: 'normal'
-      });
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'normal' });
       recaptchaVerifier.render();
-    } catch(e){
-      console.warn('reCAPTCHA init failed', e);
-    }
+    } catch(e){ console.warn('reCAPTCHA init failed', e); }
   };
   setupRecaptcha();
 
-  // Auth handlers
-  function normalizePhone(p){
-    p = (p || '').trim();
-    if(!p.startsWith('+')) return p; // user must enter international format
-    return p;
-  }
-
-  sendCodeBtn.addEventListener('click', async () => {
-    const phone = normalizePhone(phoneInput.value);
-    if(!phone || !phone.startsWith('+')){
-      toast('Bitte im internationalen Format beginnen, z. B. +49...');
-      return;
-    }
-    try{
-      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
-      codeBox.classList.remove('hidden');
-      toast('SMS gesendet. Prüfe dein Handy.');
-    }catch(err){
-      console.error(err);
-      toast('Fehler beim Senden: ' + (err.message || err));
-    }
-  });
-
-  verifyBtn.addEventListener('click', async () => {
-    const code = codeInput.value.trim();
-    if(!confirmationResult){ toast('Bitte zuerst Code senden.'); return; }
-    try{
-      const cred = await confirmationResult.confirm(code);
-      // On success, auth state listener below will proceed
-      toast('Erfolgreich angemeldet.');
-    }catch(err){
-      console.error(err);
-      toast('Code falsch oder abgelaufen.');
-    }
-  });
-
-  // Demo login (anonymous) for local testing
-  demoLoginBtn.addEventListener('click', async () => {
-    try{
-      await auth.signInAnonymously();
-      toast('Demo‑Login aktiv (anonym).');
-    }catch(err){
-      console.error(err);
-      toast('Demo‑Login fehlgeschlagen.');
-    }
-  });
-
-  // Listen auth state
-  auth.onAuthStateChanged(async (user) => {
-    if(!user){
-      showView('auth');
-      return;
-    }
-    // Load or create user profile
-    const userDoc = await db.collection('users').doc(user.uid).get();
-    me = userDoc.exists ? userDoc.data() : null;
-    if(!me){
-      // Prefill phone if available
-      displayNameInput.value = '';
-      aboutInput.value = 'Hey there! I am using Chatty.';
-      if(user.phoneNumber){
-        // store to temp state
-      }
-      showView('profile');
-    }else{
-      showView('app');
-      renderMe(me);
-      startThreadsListener();
-    }
-  });
-
   function showView(which){
-    authView.classList.add('hidden');
-    profileView.classList.add('hidden');
-    appView.classList.add('hidden');
+    authView.classList.add('hidden'); profileView.classList.add('hidden'); appView.classList.add('hidden');
     if(which==='auth') authView.classList.remove('hidden');
     if(which==='profile') profileView.classList.remove('hidden');
     if(which==='app') appView.classList.remove('hidden');
   }
 
+  function normalizePhone(p){ return (p||'').trim(); }
+
+  sendCodeBtn.addEventListener('click', async () => {
+    const phone = normalizePhone(phoneInput.value);
+    if(!phone.startsWith('+')){ toast('Bitte im Format +49…'); return; }
+    try{
+      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      confirmationResult = await auth.signInWithPhoneNumber(phone, recaptchaVerifier);
+      codeBox.classList.remove('hidden'); toast('SMS gesendet.');
+    }catch(err){ console.error(err); toast('Fehler: ' + (err.message||err)); }
+  });
+  verifyBtn.addEventListener('click', async () => {
+    const code = codeInput.value.trim();
+    if(!confirmationResult){ toast('Zuerst Code senden.'); return; }
+    try{ await confirmationResult.confirm(code); toast('Angemeldet.'); }
+    catch(err){ console.error(err); toast('Code falsch/abgelaufen.'); }
+  });
+  demoLoginBtn.addEventListener('click', async () => {
+    try{ await auth.signInAnonymously(); toast('Demo-Login aktiv.'); }
+    catch(err){ console.error(err); toast('Demo-Login fehlgeschlagen.'); }
+  });
+
+  auth.onAuthStateChanged(async (user) => {
+    if(!user){ showView('auth'); return; }
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    me = userDoc.exists ? userDoc.data() : null;
+    if(!me){ showView('profile'); }
+    else { showView('app'); renderMe(me); startThreadsListener(); await loadSlotPoints(); }
+  });
+
   logoutBtn.addEventListener('click', async () => {
     try{
       await auth.signOut();
-      // cleanup
-      cleanupThreadListener();
-      cleanupThreadsListener();
-      me = null; activePeer = null; activeThreadId = null;
+      cleanupThreadListener(); cleanupThreadsListener();
+      me=null; activePeer=null; activeThreadId=null;
       chatArea.innerHTML = '<div style="text-align:center; color:var(--muted); margin-top:1rem">Kein Chat ausgewählt.</div>';
       toast('Abgemeldet.');
     }catch(e){ console.error(e) }
   });
 
-  // Profile upload
+  // Profile
   profilePhotoInput.addEventListener('change', () => {
     const f = profilePhotoInput.files?.[0];
     if(!f){ profilePhotoPreview.src=''; return; }
@@ -501,55 +543,43 @@
     reader.onload = e => profilePhotoPreview.src = e.target.result;
     reader.readAsDataURL(f);
   });
-
   saveProfileBtn.addEventListener('click', async () => {
-    const user = auth.currentUser;
-    if(!user){ toast('Nicht angemeldet.'); return; }
+    const user = auth.currentUser; if(!user){ toast('Nicht angemeldet.'); return; }
     const name = displayNameInput.value.trim();
     const birthday = birthdayInput.value || null;
     const about = aboutInput.value.trim() || null;
     if(!name){ toast('Bitte Namen eingeben.'); return; }
-
     let photoURL = null;
     const f = profilePhotoInput.files?.[0];
     try{
       if(f){
-        const ext = f.name.split('.').pop() || 'jpg';
-        const ref = storage.ref().child(`pfp/${user.uid}.${ext}`);
-        await ref.put(f);
-        photoURL = await ref.getDownloadURL();
+        const ext = (f.name.split('.').pop()||'jpg'); const ref = storage.ref().child(`pfp/${user.uid}.${ext}`);
+        await ref.put(f); photoURL = await ref.getDownloadURL();
       }
       const profile = {
-        uid: user.uid,
-        phoneNumber: user.phoneNumber || null,
-        name, birthday, about,
+        uid:user.uid, phoneNumber:user.phoneNumber||null, name, birthday, about,
         photoURL: photoURL || null,
+        slotPoints: 0,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       };
       await db.collection('users').doc(user.uid).set(profile, { merge:true });
-      me = profile;
-      renderMe(me);
-      showView('app');
-      startThreadsListener();
+      me = {...(me||{}), ...profile};
+      renderMe(me); showView('app'); startThreadsListener(); await loadSlotPoints();
       toast('Profil gespeichert.');
-    }catch(err){
-      console.error(err);
-      toast('Profil speichern fehlgeschlagen.');
-    }
+    }catch(err){ console.error(err); toast('Profil speichern fehlgeschlagen.'); }
   });
 
   function renderMe(profile){
-    mePhoto.src = profile.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name || 'Ich');
+    mePhoto.src = profile.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name || 'Ich'));
     meName.textContent = profile.name || 'Ich';
     mePhone.textContent = profile.phoneNumber || 'Anonym';
   }
 
-  // Threads (chat list)
+  // Threads
   function startThreadsListener(){
     cleanupThreadsListener();
-    const user = auth.currentUser;
-    if(!user) return;
+    const user = auth.currentUser; if(!user) return;
     threadsUnsub = db.collection('threads')
       .where('participants','array-contains', user.uid)
       .orderBy('lastMessageAt','desc')
@@ -566,7 +596,6 @@
   function cleanupThreadsListener(){ if(threadsUnsub){ threadsUnsub(); threadsUnsub=null; }}
 
   async function renderChatItem(threadId, t, peerId){
-    // fetch peer profile (cache naive)
     const peerDoc = await db.collection('users').doc(peerId).get();
     const peer = peerDoc.data() || { name:'Unbekannt', photoURL:null, phoneNumber:'?' };
     const div = document.createElement('div');
@@ -589,36 +618,22 @@
     if(!d) return '';
     const now = new Date();
     const sameDay = d.toDateString() === now.toDateString();
-    return sameDay ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) :
-      d.toLocaleDateString();
+    return sameDay ? d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : d.toLocaleDateString();
   }
 
-  // Start chat with phone number
   startChatBtn.addEventListener('click', async () => {
     const phone = normalizePhone(searchPhone.value);
-    if(!phone || !phone.startsWith('+')){
-      toast('Nummer mit +Ländercode eingeben.');
-      return;
-    }
+    if(!phone || !phone.startsWith('+')){ toast('Nummer mit +Ländercode eingeben.'); return; }
     const peer = await findUserByPhone(phone);
-    if(!peer){
-      toast('Kein Nutzer mit dieser Nummer gefunden.');
-      return;
-    }
+    if(!peer){ toast('Kein Nutzer mit dieser Nummer gefunden.'); return; }
     const threadId = await ensureThread(me.uid, peer.uid, me.phoneNumber, peer.phoneNumber);
-    await openThread(threadId, peer);
-    searchPhone.value = '';
-    toast('Chat geöffnet.');
+    await openThread(threadId, peer); searchPhone.value = ''; toast('Chat geöffnet.');
   });
-
   async function findUserByPhone(phone){
     const q = await db.collection('users').where('phoneNumber','==', phone).limit(1).get();
-    if(q.empty) return null;
-    return q.docs[0].data();
+    if(q.empty) return null; return q.docs[0].data();
   }
-
   function makeThreadId(a,b){ return [a,b].sort().join('_'); }
-
   async function ensureThread(uidA, uidB, phoneA, phoneB){
     const id = makeThreadId(uidA, uidB);
     const ref = db.collection('threads').doc(id);
@@ -635,22 +650,18 @@
     }
     return id;
   }
-
   async function openThread(threadId, peer){
-    activeThreadId = threadId;
-    activePeer = peer;
+    activeThreadId = threadId; activePeer = peer;
     peerPhoto.src = peer.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(peer.name || '?'));
     peerName.textContent = peer.name || peer.phoneNumber || 'Kontakt';
     peerSubtitle.textContent = peer.phoneNumber || '';
     chatArea.innerHTML = '';
     startMessagesListener(threadId);
   }
-
   function startMessagesListener(threadId){
     cleanupThreadListener();
     messagesUnsub = db.collection('threads').doc(threadId).collection('messages')
-      .orderBy('ts','asc')
-      .limit(200)
+      .orderBy('ts','asc').limit(200)
       .onSnapshot(snap => {
         chatArea.innerHTML = '';
         snap.forEach(doc => renderMessage(doc.data()));
@@ -662,128 +673,204 @@
   function renderMessage(m){
     const div = document.createElement('div');
     div.className = 'bubble ' + (m.senderId === auth.currentUser?.uid ? 'me' : 'them');
-    if(m.text){ 
-      const p = document.createElement('div'); 
-      p.textContent = m.text; 
-      div.appendChild(p); 
-    }
-    if(m.imageUrl){
-      const img = document.createElement('img');
-      img.className = 'msg-image';
-      img.src = m.imageUrl;
-      img.alt = 'Bild';
-      div.appendChild(img);
-    }
-    if(m.audioUrl){
-      const audio = document.createElement('audio');
-      audio.controls = true;
-      audio.src = m.audioUrl;
-      div.appendChild(audio);
-    }
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    meta.textContent = formatTime(m.ts?.toDate?.());
-    div.appendChild(meta);
+    if(m.text){ const p = document.createElement('div'); p.textContent = m.text; div.appendChild(p); }
+    if(m.imageUrl){ const img = document.createElement('img'); img.className='msg-image'; img.src=m.imageUrl; img.alt='Bild'; div.appendChild(img); }
+    if(m.audioUrl){ const audio=document.createElement('audio'); audio.controls=true; audio.src=m.audioUrl; div.appendChild(audio); }
+    const meta = document.createElement('div'); meta.className='meta'; meta.textContent = formatTime(m.ts?.toDate?.()); div.appendChild(meta);
     chatArea.appendChild(div);
   }
 
   // Send text
   sendBtn.addEventListener('click', sendText);
-  msgInput.addEventListener('keydown', (e)=>{
-    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendText(); }
-  });
+  msgInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendText(); }});
   async function sendText(){
-    const text = msgInput.value.trim();
-    if(!text) return;
+    const text = msgInput.value.trim(); if(!text) return;
     if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); return; }
-    msgInput.value = '';
-    await pushMessage({ text });
+    msgInput.value = ''; await pushMessage({ text });
   }
 
   // Send image
   imageInput.addEventListener('change', async () => {
-    const f = imageInput.files?.[0];
-    if(!f){ return; }
+    const f = imageInput.files?.[0]; if(!f) return;
     if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); imageInput.value=''; return; }
     try{
-      const url = await uploadFile(f, 'images');
-      await pushMessage({ imageUrl: url, type:'image' });
-      imageInput.value = '';
-    }catch(err){
-      console.error(err);
-      toast('Upload fehlgeschlagen.');
-    }
+      const url = await uploadFile(f, 'images'); await pushMessage({ imageUrl:url, type:'image' }); imageInput.value='';
+    }catch(err){ console.error(err); toast('Upload fehlgeschlagen.'); }
   });
 
-  // Voice notes (MediaRecorder)
+  // Voice notes
   recBtn.addEventListener('click', async () => {
-    if(isRecording){
-      // stop
-      recorder?.stop();
-      isRecording = false;
-      micIcon.style.opacity = 1;
-      return;
-    }
+    if(isRecording){ recorder?.stop(); isRecording=false; micIcon.style.opacity=1; return; }
     if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); return; }
     try{
       const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-      recChunks = [];
-      recorder = new MediaRecorder(stream);
-      recorder.ondataavailable = (e) => { if(e.data.size>0) recChunks.push(e.data) };
-      recorder.onstop = async () => {
-        const blob = new Blob(recChunks, { type: 'audio/webm' });
+      recChunks=[]; recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e)=>{ if(e.data.size>0) recChunks.push(e.data) };
+      recorder.onstop = async ()=>{
+        const blob = new Blob(recChunks, { type:'audio/webm' });
         const file = new File([blob], `voice_${Date.now()}.webm`, { type:'audio/webm' });
-        const url = await uploadFile(file, 'audio');
-        await pushMessage({ audioUrl: url, type:'audio' });
+        const url = await uploadFile(file, 'audio'); await pushMessage({ audioUrl:url, type:'audio' });
       };
-      recorder.start();
-      isRecording = true;
-      micIcon.style.opacity = 0.6;
-      toast('🎤 Aufnahme… erneut tippen zum Beenden.');
-    }catch(err){
-      console.error(err);
-      toast('Mikrofonzugriff verweigert.');
-    }
+      recorder.start(); isRecording = true; micIcon.style.opacity=.6; toast('🎤 Aufnahme… erneut tippen zum Beenden.');
+    }catch(err){ console.error(err); toast('Mikrofonzugriff verweigert.'); }
   });
 
   async function uploadFile(file, folder){
     const uid = auth.currentUser.uid;
-    const safeName = (file.name || 'file').replace(/[^a-z0-9\._-]+/gi,'_').toLowerCase();
+    const safeName = (file.name||'file').replace(/[^a-z0-9\._-]+/gi,'_').toLowerCase();
     const ref = storage.ref().child(`${folder}/${uid}/${Date.now()}_${safeName}`);
-    await ref.put(file);
-    return await ref.getDownloadURL();
+    await ref.put(file); return await ref.getDownloadURL();
   }
 
   async function pushMessage({ text=null, imageUrl=null, audioUrl=null, type=null }){
-    const user = auth.currentUser;
-    if(!user || !activeThreadId) return;
+    const user = auth.currentUser; if(!user || !activeThreadId) return;
     const msg = {
-      senderId: user.uid,
-      text: text || null,
-      imageUrl: imageUrl || null,
-      audioUrl: audioUrl || null,
-      ts: firebase.firestore.FieldValue.serverTimestamp(),
-      type: type || (imageUrl ? 'image' : audioUrl ? 'audio' : 'text')
+      senderId: user.uid, text: text||null, imageUrl: imageUrl||null, audioUrl: audioUrl||null,
+      ts: firebase.firestore.FieldValue.serverTimestamp(), type: type || (imageUrl?'image': audioUrl?'audio': 'text')
     };
     const msgRef = db.collection('threads').doc(activeThreadId).collection('messages').doc();
     await msgRef.set(msg);
-    // Update thread summary
-    const patch = {
+    await db.collection('threads').doc(activeThreadId).set({
       lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
       lastMessageText: text || (imageUrl ? '🖼️ Bild' : audioUrl ? '🎤 Sprachnotiz' : ''),
       lastMessageType: msg.type
-    };
-    await db.collection('threads').doc(activeThreadId).set(patch, { merge:true });
+    }, { merge:true });
   }
 
-  // Initial pfp placeholder
+  // ===== SLOT (3×3) Triple-Chance-Style =====
+  slotBtn.addEventListener('click', async ()=>{ await openSlot(); });
+  slotClose.addEventListener('click', ()=>{ slotModal.classList.add('hidden'); });
+  slotRulesBtn.addEventListener('click', ()=>{
+    alert('Regeln:\\n- 3 Walzen × 3 Reihen\\n- Gewinn für 3 gleiche Symbole in einer Reihe (links beginnend) = 50 Punkte\\n- Nach einem Gewinn erhältst du bis zu 2 Re-Spins (insgesamt 3 Chancen) – Ziel: Vollbild\\n- Vollbild (alle 9 gleich) = 1000 Punkte');
+  });
+
+  function buildReelsGrid(grid){
+    reelsEl.innerHTML='';
+    for(let c=0;c<3;c++){
+      const col = document.createElement('div'); col.className='reel';
+      for(let r=0;r<3;r++){
+        const cell = document.createElement('div'); cell.className='cell'; cell.textContent = grid[r][c];
+        col.appendChild(cell);
+      }
+      reelsEl.appendChild(col);
+    }
+  }
+
+  function randomGrid(){
+    const g = [[],[],[]];
+    for(let c=0;c<3;c++){
+      for(let r=0;r<3;r++){
+        g[r][c] = SYMS[Math.floor(Math.random()*SYMS.length)];
+      }
+    }
+    return g;
+  }
+
+  function isRowWin(grid, r){
+    return grid[r][0]===grid[r][1] && grid[r][1]===grid[r][2];
+  }
+
+  function isFullScreen(grid){
+    const f = grid[0][0];
+    for(let r=0;r<3;r++){ for(let c=0;c<3;c++){ if(grid[r][c]!==f) return false; } }
+    return true;
+  }
+
+  async function loadSlotPoints(){
+    const user = auth.currentUser; if(!user) return;
+    const doc = await db.collection('users').doc(user.uid).get();
+    slotPoints = (doc.exists && (doc.data().slotPoints||0)) || 0;
+    slotPointsEl.textContent = slotPoints;
+  }
+  async function saveSlotPoints(val){
+    const user = auth.currentUser; if(!user) return;
+    slotPoints = Math.max(0, Math.floor(val));
+    slotPointsEl.textContent = slotPoints;
+    await db.collection('users').doc(user.uid).set({ slotPoints, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+  }
+
+  async function openSlot(){
+    await loadSlotPoints();
+    buildReelsGrid(randomGrid());
+    slotWinEl.textContent = 0;
+    slotModal.classList.remove('hidden');
+    renderLeaderboard();
+  }
+
+  slotSpin.addEventListener('click', async ()=>{
+    if(spinning) return;
+    spinning = true; slotSpin.disabled = true;
+    let steps = 10;
+    const spinTimer = setInterval(()=>{
+      buildReelsGrid(randomGrid());
+      steps--;
+      if(steps<=0){ clearInterval(spinTimer); finishSpin(); }
+    }, 90);
+  });
+
+  async function finishSpin(){
+    // 1) Roll outcome
+    let grid = randomGrid();
+    buildReelsGrid(grid);
+
+    // 2) Evaluate line wins
+    let win = 0;
+    let rowWins = [0,1,2].filter(r => isRowWin(grid, r));
+
+    if(rowWins.length>0){
+      win += rowWins.length * PAYLINE_WIN;
+      // 3) Triple-Chance-like: give up to 2 extra respins to attempt fullscreen
+      let respins = 2;
+      while(respins-- > 0){
+        // Lock winning rows; re-spin only non-winning rows to try fill all same symbol as first winning row
+        const targetSym = grid[rowWins[0]][0];
+        for(let r=0;r<3;r++){
+          if(!rowWins.includes(r)){
+            for(let c=0;c<3;c++){
+              grid[r][c] = Math.random()<0.5 ? targetSym : SYMS[Math.floor(Math.random()*SYMS.length)];
+            }
+          }
+        }
+        buildReelsGrid(grid);
+        // check fullscreen
+        if(isFullScreen(grid)){
+          win += FULLSCREEN_WIN;
+          break;
+        }
+      }
+    }
+
+    slotWinEl.textContent = win;
+    await saveSlotPoints(slotPoints + win);
+    toast(win>0 ? ('Gewinn: +' + win + ' Punkte') : 'Keine Linie – versuch es erneut');
+    spinning = false; slotSpin.disabled = false;
+    renderLeaderboard();
+  }
+
+  async function renderLeaderboard(){
+    try{
+      const q = await db.collection('users').orderBy('slotPoints','desc').limit(10).get();
+      lbEl.innerHTML = '';
+      let i=1;
+      q.forEach(doc=>{
+        const u = doc.data();
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = `<div>#${i}</div><div>${u.name||'Anonym'}</div><div>${u.slotPoints||0} Punkte</div>`;
+        lbEl.appendChild(row); i++;
+      });
+    }catch(e){
+      lbEl.innerHTML = '<div class="row"><div>Leaderboard erscheint, sobald Punkte vorhanden sind.</div></div>';
+    }
+  }
+
   profilePhotoPreview.src = 'https://ui-avatars.com/api/?name=Du';
-
-  // Remind about https
   if(location.protocol !== 'https:' && location.hostname !== 'localhost'){
-    toast('Tipp: Für Telefon‑Login brauchst du HTTPS/Hosting.' , 5000);
+    toast('Tipp: Für Telefon-Login brauchst du HTTPS/Hosting.' , 5000);
   }
 
+  function cleanupThreadsListener(){ if(threadsUnsub){ threadsUnsub(); threadsUnsub=null; }}
+  function cleanupThreadListener(){ if(messagesUnsub){ messagesUnsub(); messagesUnsub=null; }}
 </script>
 
 <!--
@@ -808,7 +895,7 @@ service cloud.firestore {
                     request.resource.data.participants.hasAll([request.auth.uid]);
       match /messages/{msgId} {
         allow read, create: if isSignedIn() && get(/databases/$(database)/documents/threads/$(threadId)).data.participants.hasAny([request.auth.uid]);
-        allow delete, update: if false; // nicht nötig
+        allow delete, update: if false;
       }
     }
   }
@@ -824,11 +911,9 @@ service firebase.storage {
   }
 }
 
-HINWEISE:
-1) In Firebase Auth die Telefon‑Anmeldung aktivieren.
-2) Unter Auth -> Einstellungen -> Autorisierte Domains die Domain hinzufügen, auf der du diese Datei hostest.
-3) Datei nicht per file:// öffnen. Nutze z. B. Firebase Hosting, GitHub Pages, Vercel oder lokal mit "npx serve".
-4) Telefonnummern IMMER im internationalen Format (+49...). Jeder Nutzer muss einmal angemeldet sein, damit er in /users existiert.
+Hinweise:
+- Slot ist nur ein Fun-Feature ohne Echtgeld/Glücksspiel, reine Punkte.
+- Leaderboard nutzt users.slotPoints.
 -->
 </body>
 </html>
