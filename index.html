@@ -32,8 +32,6 @@
     .header .right{margin-left:auto;display:flex;align-items:center;gap:.4rem}
     .icon-btn{width:40px;height:40px;display:grid;place-items:center;background:#22333a;border-radius:50%;cursor:pointer;border:1px solid #2a3942}
     .icon-btn svg{width:22px;height:22px;fill:#cfd8dc}
-    .logo{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:#000;margin-right:.35rem;overflow:hidden}
-    .logo svg{width:26px;height:26px}
     .sidebar{grid-area:sidebar;border-right:1px solid var(--border);background:var(--panel);display:flex;flex-direction:column;min-width:0}
     .sidebar .topbar{height:64px;display:flex;align-items:center;justify-content:space-between;padding:.5rem .6rem;background:var(--panel-light)}
     .sidebar .list{overflow:auto}
@@ -52,13 +50,14 @@
     .chat-item .name{font-weight:600}
     .chat-item .last{color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
     .chat-item .time{color:var(--muted);font-size:.75rem}
+    .pfp{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#2a3942;display:block}
 
     .center-wrap{min-height:100vh;display:grid;place-items:center;padding:1rem}
     .card{width:min(480px,95vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:1rem;box-shadow:0 8px 30px rgba(0,0,0,.35)}
     .pfp-lg{width:84px;height:84px;border-radius:50%;object-fit:cover;background:#2a3942;display:block}
     .inline-help{font-size:.85rem;color:#cfd8dc}
 
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9998;padding:1rem}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9999;padding:1rem}
     .sheet{width:min(900px,96vw);background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:1rem;box-shadow:0 16px 60px rgba(0,0,0,.55)}
     .sheet header{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.5rem}
     .sheet h2{margin:0;font-size:1.2rem}
@@ -85,12 +84,12 @@
     .table th{color:#b7c8d1;font-weight:700}
     .actions{display:flex;gap:.35rem;flex-wrap:wrap}
 
-    .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1f2c34;color:var(--text);padding:.5rem .75rem;border-radius:10px;border:1px solid #2a3942;box-shadow:var(--bubble-shadow);z-index:9999;display:none}
+    .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1f2c34;color:var(--text);padding:.5rem .75rem;border-radius:10px;border:1px solid #2a3942;box-shadow:var(--bubble-shadow);z-index:99999;display:none}
   </style>
 </head>
 <body>
 
-<!-- AUTH VIEW (fresh) -->
+<!-- AUTH VIEW -->
 <section id="authView" class="center-wrap">
   <div class="card">
     <h1>📧 Anmeldung</h1>
@@ -100,7 +99,7 @@
         <input id="passInput" class="input" type="password" placeholder="Passwort" autocomplete="current-password" required/>
       </div>
       <div class="row" style="margin-top:.5rem">
-        <button id="loginBtn" class="btn" type="submit" data-mode="login">Einloggen</button>
+        <button id="loginBtn" class="btn" type="button" data-mode="login">Einloggen</button>
         <button id="registerBtn" class="btn secondary" type="button" data-mode="register">Registrieren</button>
       </div>
       <div style="display:flex;align-items:center;gap:.5rem;margin-top:.5rem">
@@ -108,10 +107,6 @@
         <label for="staySignedIn" class="inline-help">Eingeloggt bleiben</label>
       </div>
       <div id="authError" class="inline-help" style="color:#ffb4a9;margin-top:.5rem"></div>
-      <div style="margin-top:.75rem;display:flex;gap:.5rem">
-        <button id="forceLoginScreenBtn" class="btn ghost" type="button">Login erzwingen</button>
-        <button id="clearSessionBtn" class="btn ghost" type="button">Sitzung löschen</button>
-      </div>
     </form>
   </div>
 </section>
@@ -143,16 +138,16 @@
         <input id="about" class="input" placeholder="Hey there! I am using Chatty." />
       </div>
     </div>
-    <button id="saveProfileBtn" class="btn" style="margin-top:1rem">Speichern & weiter</button>
+    <button id="saveProfileBtn" class="btn" type="button" style="margin-top:1rem">Speichern & weiter</button>
   </div>
 </section>
 
-<!-- MAIN APP VIEW (unchanged core layout) -->
+<!-- MAIN APP VIEW -->
 <section id="appView" class="app hidden">
   <aside class="sidebar">
     <div class="topbar">
       <div class="row" style="align-items:center;flex:1">
-        <img id="mePhoto" class="pfp" alt="Ich" style="width:40px;height:40px;border-radius:50%;object-fit:cover">
+        <img id="mePhoto" class="pfp" alt="Ich">
         <div>
           <div id="meName" class="title"></div>
           <div id="meEmail" class="subtitle"></div>
@@ -160,40 +155,20 @@
       </div>
       <button id="logoutBtn" class="btn ghost" title="Abmelden">⎋</button>
     </div>
-    <div class="row" style="padding:.6rem">
-      <input id="searchEmail" class="input" placeholder="E-Mail suchen" type="search"/>
-    </div>
-    <div class="row" style="padding:0 .6rem .6rem .6rem">
-      <input id="searchName" class="input" placeholder="Name suchen" type="search"/>
-      <button id="startChatBtn" class="btn">Chat</button>
-    </div>
     <div id="chatList" class="list"></div>
   </aside>
 
   <header class="header">
-    <div class="logo" title="Logo">
-      <svg viewBox="0 0 100 100" aria-label="Logo" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100" height="100" fill="#000"/>
-        <circle cx="50" cy="50" r="18" fill="#fff"/>
-        <g stroke="#fff" stroke-width="6" stroke-linecap="round">
-          <line x1="50" y1="6" x2="50" y2="22"/>
-          <line x1="50" y1="78" x2="50" y2="94"/>
-          <line x1="6" y1="50" x2="22" y2="50"/>
-          <line x1="78" y1="50" x2="94" y2="50"/>
-          <line x1="20" y1="20" x2="30" y2="30"/>
-          <line x1="70" y1="70" x2="80" y2="80"/>
-          <line x1="20" y1="80" x2="30" y2="70"/>
-          <line x1="70" y1="30" x2="80" y2="20"/>
-        </g>
-      </svg>
-    </div>
+    <button id="profileBtn" class="icon-btn" title="Profil">
+      <img id="headerMePhoto" alt="Ich" style="width:22px;height:22px;border-radius:50%;object-fit:cover" />
+    </button>
     <img id="peerPhoto" class="pfp" alt="Kontakt">
     <div>
       <div id="peerName" class="title">Wähle einen Chat</div>
       <div id="peerSubtitle" class="subtitle"></div>
     </div>
     <div class="right">
-      <button id="openSearchBtn" class="icon-btn" title="Kontakte suchen">
+      <button id="openSearchBtn" class="icon-btn" title="Kontakte">
         <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zM9.5 14A4.5 4.5 0 119.5 5a4.5 4.5 0 010 9z"/></svg>
       </button>
       <button id="openTopBtn" class="icon-btn" title="Topliste">
@@ -213,10 +188,10 @@
   </main>
 
   <div class="composer">
-    <label class="icon-btn" for="imageInput" title="Bild senden">
-      <input id="imageInput" type="file" accept="image/*" />
+    <input id="imageInput" type="file" accept="image/*" style="display:none" />
+    <button id="imageBtn" class="icon-btn" type="button" title="Bild senden">
       <svg viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5c-1.1 0-2 .9-2 2v14h18zM5 5h14v10l-3.5-3.5-2.5 2.5-4-4L5 13V5zm0 14h14v2H5v-2z"/></svg>
-    </label>
+    </button>
     <button id="recBtn" class="icon-btn" title="Sprachnotiz aufnehmen">
       <svg id="micIcon" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 14 0h-2zM11 19h2v3h-2v-3z"/></svg>
     </button>
@@ -228,16 +203,9 @@
 <!-- SEARCH MODAL -->
 <div id="searchModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Suche">
   <div class="sheet">
-    <header><h2>🔎 Kontakte suchen</h2><button id="searchClose" class="btn secondary">Schließen</button></header>
-    <div class="row">
-      <input id="searchNameModal" class="input" type="search" placeholder="Name"/>
-      <input id="searchEmailModal" class="input" type="email" placeholder="E-Mail"/>
-    </div>
-    <div class="row" style="margin-top:.5rem">
-      <button id="searchRunBtn" class="btn">Suchen</button>
-      <button id="searchStartChatBtn" class="btn secondary">Chat starten</button>
-    </div>
-    <div id="searchResults" style="margin-top:.75rem"></div>
+    <header><h2>🔎 Nutzer</h2><button id="searchClose" class="btn secondary">Schließen</button></header>
+    <input id="searchGlobal" class="input" type="search" placeholder="Nach Name oder E‑Mail filtern" />
+    <div id="searchResults" style="margin-top:.75rem;max-height:60vh;overflow:auto"></div>
   </div>
 </div>
 
@@ -347,6 +315,34 @@
   </div>
 </div>
 
+<!-- PROFILE EDIT MODAL -->
+<div id="profileEditModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Profil bearbeiten">
+  <div class="sheet">
+    <header><h2>👤 Profil</h2><button id="profileEditClose" class="btn secondary">Schließen</button></header>
+    <div class="row" style="align-items:center">
+      <img id="profileEditPreview" class="pfp-lg" alt="Profilbild">
+      <div>
+        <label class="label">Profilbild ändern</label>
+        <input type="file" id="profileEditPhoto" accept="image/*" class="input"/>
+      </div>
+    </div>
+    <div class="row" style="margin-top:.5rem">
+      <div>
+        <label class="label" for="profileEditName">Name</label>
+        <input id="profileEditName" class="input" placeholder="Dein Name"/>
+      </div>
+      <div>
+        <label class="label">Guthaben</label>
+        <div id="profileEditBalance" class="chip">€ 0</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:.75rem">
+      <button id="profileEditSave" class="btn" type="button">Speichern</button>
+      <button id="profileDelete" class="btn danger" type="button">Profil löschen</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <!-- Firebase SDKs -->
@@ -377,89 +373,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(), db=firebase.firestore(), storage=firebase.storage();
 
-// --- Env sanity (http + storage) ---
-(function(){
-  const isFile = location.protocol === 'file:';
-  try{ localStorage.setItem('__t','1'); localStorage.removeItem('__t'); }catch(e){ toast('Browser speichert keine Sitzung.'); }
-  if(isFile){ toast('Bitte über http://localhost öffnen – file:// blockiert Auth.'); }
-})();
-
-// --- Fresh Login window logic ---
-const authForm = $('#authForm'), emailInput = $('#emailInput'), passInput = $('#passInput');
-const loginBtn = $('#loginBtn'), registerBtn = $('#registerBtn');
-const authError = $('#authError'), staySignedIn = $('#staySignedIn');
-
-function setAuthBusy(b){
-  loginBtn.disabled = b; registerBtn.disabled = b; emailInput.disabled = b; passInput.disabled = b;
-}
-
-authForm.addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  await doAuth('login');
-});
-registerBtn.addEventListener('click', async ()=>{
-  await doAuth('register');
-});
-
-async function doAuth(mode){
-  try{
-    authError.textContent='';
-    const email=(emailInput.value||'').trim();
-    const pass=(passInput.value||'').trim();
-    if(!email || !pass){ authError.textContent='Bitte E-Mail & Passwort eingeben.'; return; }
-    setAuthBusy(true);
-    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-    if(mode==='register'){
-      await auth.createUserWithEmailAndPassword(email, pass);
-      try{ await ensureUserDocExists(auth.currentUser); }catch(_e){}
-      toast('Konto erstellt – Profil anlegen.');
-    }else{
-      await auth.signInWithEmailAndPassword(email, pass);
-      toast('Angemeldet.');
-    }
-    localStorage.setItem("staySignedIn", staySignedIn.checked ? "1" : "0");
-  }catch(e){
-    console.error(e);
-    const code = e && e.code || '';
-    const map = {
-      'auth/invalid-email':'Ungültige E-Mail.',
-      'auth/user-not-found':'Kein Konto gefunden. Bitte registrieren.',
-      'auth/wrong-password':'Falsches Passwort.',
-      'auth/invalid-credential':'Ungültige Zugangsdaten.',
-      'auth/too-many-requests':'Zu viele Versuche – kurz warten.',
-      'auth/network-request-failed':'Netzwerkfehler – ggf. Adblock/VPN.',
-      'auth/unauthorized-domain':'Domain nicht autorisiert – Firebase Authorized domains.'
-    };
-    authError.textContent = map[code] || (e.message||'Login fehlgeschlagen');
-  }finally{
-    setAuthBusy(false);
-  }
-}
-
-// --- Stay signed-in preference ---
-(function(){ const stayPref = localStorage.getItem("staySignedIn") === "1"; if(!stayPref){ try{ auth.signOut(); }catch(e){} } })();
-
-
-// --- Presence (heartbeat) ---
-let hbTimer=null;
-async function startPresence(){ 
-  const user=auth.currentUser; if(!user) return;
-  const ref=db.collection('users').doc(user.uid);
-  const beat = async ()=>{
-    try{ await ref.set({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }); }catch(e){}
-  };
-  // initial
-  beat();
-  // every 25s
-  if(hbTimer) clearInterval(hbTimer);
-  hbTimer = setInterval(beat, 25000);
-  // on visibility / before unload
-  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) beat(); });
-  window.addEventListener('beforeunload', ()=>{ beat(); });
-}
-
-
-// --- Ensure user profile doc exists (so Admin/Search see accounts) ---
+// --- Ensure user profile doc exists ---
 async function ensureUserDocExists(user){
   if(!user) return null;
   const ref = db.collection('users').doc(user.uid);
@@ -474,7 +388,7 @@ async function ensureUserDocExists(user){
     photoURL: null,
     about: null,
     birthday: null,
-    slotBalance: 1500,          // Startguthaben für NEUE Accounts
+    slotBalance: 1500,
     slotWinsTotal: 0,
     slotLoanOutstanding: 0,
     slotLoanWeekKey: null,
@@ -486,17 +400,28 @@ async function ensureUserDocExists(user){
     await ref.set(base, { merge: true });
     return base;
   } else {
-    // Ensure searchable fields always present
-    const d = snap.data()||{};
-    const patch = {};
-    if(!('name' in d) || !d.name){ patch.name = defaultName; }
-    if(!('nameLower' in d) || !d.nameLower){ patch.nameLower = (patch.name||d.name||defaultName).toLowerCase(); }
+    const d = snap.data()||{}; const patch={};
+    if(!d.name){ patch.name = defaultName; }
+    if(!d.nameLower){ patch.nameLower = (patch.name||d.name||defaultName).toLowerCase(); }
     if(Object.keys(patch).length){ patch.updatedAt = firebase.firestore.FieldValue.serverTimestamp(); await ref.set(patch, { merge:true }); }
     return {...d, ...patch};
   }
 }
 
-// --- Core app state/logic (kept; trimmed for brevity but functional) ---
+// --- Presence (heartbeat) ---
+let hbTimer=null;
+async function startPresence(){ 
+  const user=auth.currentUser; if(!user) return;
+  const ref=db.collection('users').doc(user.uid);
+  const beat = async ()=>{ try{ await ref.set({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }); }catch(e){} };
+  beat();
+  if(hbTimer) clearInterval(hbTimer);
+  hbTimer = setInterval(beat, 25000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) beat(); });
+  window.addEventListener('beforeunload', ()=>{ beat(); });
+}
+
+// --- Core app state/logic ---
 let me=null, adminUnlocked=false;
 function formatTime(d){ if(!d) return ''; const now=new Date(); const sameDay=d.toDateString()===now.toDateString(); return sameDay? d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : d.toLocaleDateString(); }
 
@@ -533,7 +458,7 @@ async function maybeWeeklyToplistReset(){
     });
     await batch.commit();
     toast("Topliste für diese Woche zurückgesetzt.");
-  }catch(e){ console.error("Weekly reset error", e); }
+  }catch(e){}
 }
 
 // Switch account
@@ -543,29 +468,23 @@ $('#switchAccountBtn').addEventListener('click', async ()=>{ try{ await auth.sig
 auth.onAuthStateChanged(async (user)=>{
   try{
     if(!user){ showView('authView'); return; }
-    // MustRecreate gate
     const cfg = await getAppConfig();
     if(cfg && cfg.mustRecreate && user && user.email !== OWNER_EMAIL){
       const createdMs = (user.metadata && user.metadata.creationTime) ? Date.parse(user.metadata.creationTime) : 0;
       const resetMs = (typeof cfg.resetEpoch === 'number') ? cfg.resetEpoch : 0;
-      if(resetMs && createdMs && createdMs < resetMs){
-        try{ await auth.signOut(); }catch(e){}
-        showView('authView'); toast('System-Reset aktiv – bitte neu registrieren.');
-        return;
-      }
+      if(resetMs && createdMs && createdMs < resetMs){ toast('System-Reset aktiv – Profil bitte neu speichern.'); showView('profileView'); return; }
     }
     await ensureUserDocExists(user);
     const doc=await db.collection('users').doc(user.uid).get();
     me = doc.exists ? doc.data() : null;
     if(!me){ showView('profileView'); }
     else {
-      showView('appView'); renderMe(me); startPresence(); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminSilent(); subscribeLeaderboards();
+      showView('appView'); renderMe(me); startPresence(); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminButton(); subscribeLeaderboards();
     }
-  }catch(err){ console.error(err); try{ await auth.signOut(); }catch(e){} showView('authView'); }
+  }catch(err){ try{ await auth.signOut(); }catch(e){} showView('authView'); }
 });
 
-// Silent admin unlock (no hints). Button sichtbar erst nach Code-Eingabe durch Klick
-function unlockAdminSilent(){
+function unlockAdminButton(){
   const btn=$('#adminBtn'); if(!btn) return;
   btn.classList.remove('hidden');
   btn.addEventListener('click', ()=>{
@@ -575,9 +494,57 @@ function unlockAdminSilent(){
 }
 
 function renderMe(profile){
-  $('#mePhoto').src = profile.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name||'Ich'));
+  const p = profile.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.name||'Ich'));
+  $('#mePhoto').src = p;
+  $('#headerMePhoto').src = p;
   $('#meName').textContent = profile.name || 'Ich';
   $('#meEmail').textContent = profile.email || '';
+}
+
+// --- Fresh Login logic ---
+const authForm = $('#authForm'), emailInput = $('#emailInput'), passInput = $('#passInput');
+const loginBtn = $('#loginBtn'), registerBtn = $('#registerBtn');
+const authError = $('#authError'), staySignedIn = $('#staySignedIn');
+
+function setAuthBusy(b){
+  loginBtn.disabled = b; registerBtn.disabled = b; emailInput.disabled = b; passInput.disabled = b;
+}
+
+if(loginBtn){ loginBtn.addEventListener('click', async ()=>{ await doAuth('login'); }); }
+[emailInput, passInput].forEach(el=>{ if(el){ el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doAuth('login'); } }); } });
+registerBtn.addEventListener('click', async ()=>{ await doAuth('register'); });
+
+async function doAuth(mode){
+  try{
+    authError.textContent='';
+    const email=(emailInput.value||'').trim();
+    const pass=(passInput.value||'').trim();
+    if(!email || !pass){ authError.textContent='Bitte E-Mail & Passwort eingeben.'; return; }
+    setAuthBusy(true);
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+    if(mode==='register'){
+      await auth.createUserWithEmailAndPassword(email, pass);
+      try{ await ensureUserDocExists(auth.currentUser); }catch(_e){}
+      toast('Konto erstellt – Profil anlegen.');
+    }else{
+      await auth.signInWithEmailAndPassword(email, pass);
+      toast('Angemeldet.');
+    }
+  }catch(e){
+    const code = e && e.code || '';
+    const map = {
+      'auth/invalid-email':'Ungültige E-Mail.',
+      'auth/user-not-found':'Kein Konto gefunden. Bitte registrieren.',
+      'auth/wrong-password':'Falsches Passwort.',
+      'auth/invalid-credential':'Ungültige Zugangsdaten.',
+      'auth/too-many-requests':'Zu viele Versuche – kurz warten.',
+      'auth/network-request-failed':'Netzwerkfehler – ggf. Adblock/VPN.',
+      'auth/unauthorized-domain':'Domain nicht autorisiert – Firebase Authorized domains.'
+    };
+    authError.textContent = map[code] || (e.message||'Login fehlgeschlagen');
+  }finally{
+    setAuthBusy(false);
+  }
 }
 
 // --- PROFILE SETUP ---
@@ -591,16 +558,16 @@ $('#saveProfileBtn').addEventListener('click', async ()=>{
     let name=($('#displayName').value||'').trim(); if(!name){ name = user.email || 'User'; $('#displayName').value=name; }
     const birthday=$('#birthday').value||null; const about=($('#about').value||'').trim()||null;
     let photoURL=null; const f=$('#profilePhotoInput').files?.[0]||null;
-    if(f){ try{ const ext=(f.name.split('.').pop()||'jpg'); const ref=storage.ref().child(`pfp/${user.uid}.${ext}`); await ref.put(f); photoURL=await ref.getDownloadURL(); }catch(e){ console.warn('Bild-Upload fehlgeschlagen',e); } }
-    const profile={ uid:user.uid, email:user.email||null, name, nameLower:name.toLowerCase(), birthday, about, photoURL:photoURL||null, slotBalance:1500, slotWinsTotal:0, slotLoanOutstanding:0, slotLoanWeekKey:null, slotLoanWeekAmount:0, createdAt:firebase.firestore.FieldValue.serverTimestamp(), updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
+    if(f){ try{ const ext=(f.name.split('.').pop()||'jpg'); const ref=storage.ref().child(`pfp/${user.uid}.${ext}`); await ref.put(f); photoURL=await ref.getDownloadURL(); }catch(e){ /* ignore */ } }
+    const profile={ uid:user.uid, email:user.email||null, name, nameLower:name.toLowerCase(), birthday, about, photoURL:photoURL||null, updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
     await db.collection('users').doc(user.uid).set(profile,{merge:true});
     me={...(me||{}),...profile};
-    renderMe(me); showView('appView'); startPresence(); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminSilent(); subscribeLeaderboards();
+    renderMe(me); showView('appView'); startPresence(); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminButton(); subscribeLeaderboards();
     toast('Profil gespeichert.');
-  }catch(e){ console.error(e); toast('Konnte Profil nicht speichern.'); }
+  }catch(e){ toast('Konnte Profil nicht speichern.'); }
 });
 
-// --- CHAT (unchanged behavior summary) ---
+// --- CHAT ---
 function startThreadsListener(){
   const user=auth.currentUser; if(!user) return;
   db.collection('threads').where('participants','array-contains',user.uid).orderBy('lastMessageAt','desc').limit(50).onSnapshot(snap=>{
@@ -638,43 +605,35 @@ function startMessagesListener(threadId){
     const chatAreaEl=$('#chatArea'); chatAreaEl.scrollTop=chatAreaEl.scrollHeight;
   });
 }
-$('#startChatBtn').addEventListener('click', async ()=>{
-  const email=($('#searchEmail').value||'').trim().toLowerCase();
-  const name=($('#searchName').value||'').trim();
-  let peer=null;
-  if(email){ const q=await db.collection('users').where('email','==', email).limit(1).get(); if(!q.empty) peer=q.docs[0].data(); }
-
-  if(!peer && name){
-    // Prefix search on nameLower
-    try{
-      const q=await db.collection('users').orderBy('nameLower').startAt(name.toLowerCase()).endAt(name.toLowerCase()+'\uf8ff').limit(5).get();
-      if(!q.empty) peer=q.docs[0].data();
-    }catch(e){
-      // Fallback: equality on exact name (no index needed)
-      const q2=await db.collection('users').where('name','==', name).limit(1).get();
-      if(!q2.empty) peer=q2.docs[0].data();
-    }
-  }
-
-  if(!peer){ toast('Kein Nutzer gefunden.'); return; }
-  const id=[auth.currentUser.uid, peer.uid].sort().join('_');
-  const ref=db.collection('threads').doc(id); const snap=await ref.get();
-  if(!snap.exists){ await ref.set({participants:[auth.currentUser.uid,peer.uid],emails:[me.email||null,peer.email||null],createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageText:'',lastMessageType:''}); }
-  await openThread(id, peer);
-});
-
 $('#sendBtn').addEventListener('click', sendText);
 $('#msgInput').addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendText(); }});
 async function sendText(){ const text=($('#msgInput').value||'').trim(); if(!text) return; if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); return; } $('#msgInput').value=''; await pushMessage({ text }); }
-$('#imageInput').addEventListener('change', async ()=>{ const f=$('#imageInput').files?.[0]; if(!f) return; if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); $('#imageInput').value=''; return; } try{ const url=await uploadFile(f,'images'); await pushMessage({ imageUrl:url, type:'image' }); $('#imageInput').value=''; }catch(e){ console.error(e); toast('Upload fehlgeschlagen.'); } });
-$('#recBtn').addEventListener('click', async ()=>{
+const imageBtn=document.getElementById('imageBtn'); if(imageBtn){ imageBtn.addEventListener('click', ()=> document.getElementById('imageInput').click()); }
+$('#imageInput').addEventListener('change', async ()=>{ const f=$('#imageInput').files?.[0]; if(!f) return; if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); $('#imageInput').value=''; return; } try{ const url=await uploadFile(f,'images'); await pushMessage({ imageUrl:url, type:'image' }); $('#imageInput').value=''; }catch(e){ toast('Upload fehlgeschlagen.'); } });
+let isRecording=false, recorder=null, recChunks=[];
+document.getElementById('recBtn').addEventListener('click', async ()=>{
   if(!activeThreadId){ toast('Wähle zuerst einen Chat.'); return; }
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true}); const chunks=[]; const rec=new MediaRecorder(stream);
-    rec.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
-    rec.onstop=async()=>{ const blob=new Blob(chunks,{type:'audio/webm'}); const file=new File([blob],`voice_${Date.now()}.webm`,{type:'audio/webm'}); const url=await uploadFile(file,'audio'); await pushMessage({audioUrl:url, type:'audio'}); };
-    rec.start(); toast('🎤 Aufnahme… zum Beenden erneut tippen.'); $('#recBtn').onclick=()=>rec.stop();
-  }catch(e){ console.error(e); toast('Mikrofonzugriff verweigert.'); }
+    if(!isRecording){
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      recChunks=[]; recorder=new MediaRecorder(stream);
+      recorder.ondataavailable=e=>{ if(e.data.size>0) recChunks.push(e.data); };
+      recorder.onstop=async()=>{
+        try{
+          const blob=new Blob(recChunks,{type:'audio/webm'});
+          if(blob.size===0){ toast('Aufnahme leer.'); return; }
+          const file=new File([blob],`voice_${Date.now()}.webm`,{type:'audio/webm'});
+          const url=await uploadFile(file,'audio');
+          await pushMessage({audioUrl:url, type:'audio'});
+          toast('🎤 Sprachnotiz gesendet.');
+        }catch(err){ toast('Senden fehlgeschlagen.'); }
+        isRecording=false; document.getElementById('micIcon').style.opacity=1;
+      };
+      recorder.start(); isRecording=true; document.getElementById('micIcon').style.opacity=.6; toast('🎤 Aufnahme… tippe erneut zum Senden.');
+    } else {
+      try{ recorder && recorder.state!=='inactive' && recorder.stop(); }catch(_e){}
+    }
+  }catch(e){ toast('Mikrofonzugriff verweigert.'); }
 });
 async function uploadFile(file,folder){ const uid=auth.currentUser.uid; const safe=(file.name||'file').replace(/[^a-z0-9\._-]+/gi,'_').toLowerCase(); const ref=storage.ref().child(`${folder}/${uid}/${Date.now()}_${safe}`); await ref.put(file); return await ref.getDownloadURL(); }
 async function pushMessage({text=null,imageUrl=null,audioUrl=null,type=null}){
@@ -684,7 +643,7 @@ async function pushMessage({text=null,imageUrl=null,audioUrl=null,type=null}){
   await db.collection('threads').doc(activeThreadId).set({lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageText:text||(imageUrl?'🖼️ Bild':audioUrl?'🎤 Sprachnotiz':''),lastMessageType:msg.type},{merge:true});
 }
 
-// --- Economy / Bank / Slot (kept from previous working logic) ---
+// --- Economy / Bank / Slot ---
 async function getBankDoc(){ const ref=db.collection('economy').doc('bank'); const snap=await ref.get(); if(!snap.exists){ await ref.set({ bankBalance: 1000000000, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), createdAt: firebase.firestore.FieldValue.serverTimestamp() }); return (await ref.get()).data(); } return snap.data(); }
 async function setBankBalance(val){ await db.collection('economy').doc('bank').set({ bankBalance: Math.max(0, Math.floor(val)), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }); }
 let slotBalance=0, slotWinsTotal=0, autospinLeft=0, spinning=false;
@@ -707,7 +666,7 @@ function updateEconomyUI(){ $('#slotBalance').textContent=fmtEUR(slotBalance); $
 async function saveEconomy(){ const user=auth.currentUser; if(!user) return; await db.collection('users').doc(user.uid).set({ slotBalance, slotWinsTotal, updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }); updateEconomyUI(); }
 
 const SYMS=["🍒","🍋","🍇","🔔","⭐","7️⃣"];
-const SYM_WEIGHTS=[30,25,20,15,7,3];
+const SYM_WEIGHTS=[30,25,20,15,7,3]; // schwerer Vollbild
 const BASELINE_BET=10, BASE_WIN_THREE=50, BASE_WIN_FULL=1000;
 
 function buildReelsGrid(grid){
@@ -737,7 +696,7 @@ function isFullScreen(grid){ const f=grid[0][0]; for(let r=0;r<3;r++){ for(let c
 $('#slotBtn').addEventListener('click', async ()=>{ await loadEconomy(); buildReelsGrid(randomGrid()); $('#slotWin').textContent=fmtEUR(0); $('#slotModal').classList.remove('hidden'); });
 $('#slotClose').addEventListener('click', ()=>{ autospinLeft=0; $('#slotModal').classList.add('hidden'); });
 $('#slotRules').addEventListener('click', ()=>{
-  alert('Regeln:\n- 5 Gewinnlinien (rechts→links): 3 Reihen + 2 Diagonalen.\n- Nur 3 gleiche AUF EINER LINIE.\n- Linien addieren sich. Einsatz 10–100.\n- 1 sanfter Re-Spin nach einer 3er-Linie; Vollbild sehr selten.\n- Vollbild: Baseline €1000 (bei Einsatz 10).');
+  alert('Regeln:\n- 5 Gewinnlinien (rechts→links): 3 Reihen + 2 Diagonalen.\n- Nur 3 gleiche AUF EINER LINIE.\n- Linien addieren sich. Einsatz 10–100.\n- Vollbild sehr selten.');
 });
 $('#bankBtn').addEventListener('click', async ()=>{ await refreshBankInfo(); $('#bankModal').classList.remove('hidden'); });
 $('#bankClose').addEventListener('click', ()=> $('#bankModal').classList.add('hidden'));
@@ -820,9 +779,11 @@ async function finishSpin(bet){
     if(s0===s1 && s1===s2){ baseWin += BASE_WIN_THREE; if(!threeHitSym) threeHitSym=s0; }
   }
   if(threeHitSym){
-    for(let r=0;r<3;r++){ for(let c=0;c<3;c++){ if(grid[r][c]!==threeHitSym && Math.random()<0.15){ grid[r][c]=threeHitSym; } } }
-    buildReelsGrid(grid);
-    if(isFullScreen(grid)){ baseWin += BASE_WIN_FULL; }
+    if(Math.random()<0.15){
+      for(let r=0;r<3;r++){ for(let c=0;c<3;c++){ if(grid[r][c]!==threeHitSym && Math.random()<0.15){ grid[r][c]=threeHitSym; } } }
+      buildReelsGrid(grid);
+      if(isFullScreen(grid)){ baseWin += BASE_WIN_FULL; }
+    }
   }
   const mult=Math.max(1, bet/BASELINE_BET);
   let win=Math.round(baseWin*mult);
@@ -846,7 +807,7 @@ async function finishSpin(bet){
   }
 }
 
-// --- Leaderboard live ---
+// --- Leaderboard live (hide zeros) ---
 let lbUnsub=null;
 function subscribeLeaderboards(){
   if(lbUnsub) lbUnsub();
@@ -877,7 +838,7 @@ $('#admTopResetBtn').addEventListener('click', async ()=>{
     const wk = isoWeekKey(new Date());
     await db.collection('app').doc('config').set({ lastToplistResetWeek: wk, lastToplistResetTs: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
     toast('Topliste manuell zurückgesetzt.');
-  }catch(e){ console.error(e); toast('Fehler beim Zurücksetzen der Topliste.'); }
+  }catch(e){ toast('Fehler beim Zurücksetzen der Topliste.'); }
 });
 $('#admHardResetBtn').addEventListener('click', async ()=>{
   if(!adminUnlocked){ toast('Kein Admin.'); return; }
@@ -899,7 +860,7 @@ $('#admHardResetBtn').addEventListener('click', async ()=>{
       ops++; if(ops % 400 === 0){ batch.commit(); batch = db.batch(); }
     });
     await batch.commit(); await refreshAdmin(); toast('Hard Reset abgeschlossen.');
-  }catch(e){ console.error(e); toast('Fehler beim Hard Reset.'); }
+  }catch(e){ toast('Fehler beim Hard Reset.'); }
 });
 let adminUsersUnsub=null;
 function startAdminUsersList(){
@@ -911,7 +872,7 @@ function startAdminUsersList(){
       const u=doc.data();
       if(filter && !((u.name||'').toLowerCase().includes(filter) || (u.email||'').toLowerCase().includes(filter))) return;
       const ls = u.lastSeen && u.lastSeen.toDate ? u.lastSeen.toDate().getTime() : 0;
-      const online = ls && (Date.now()-ls)<60000; // 60s
+      const online = ls && (Date.now()-ls)<60000;
       const dot = online? '🟢 Online' : '⚫ Offline';
       rows.push(`<tr data-uid="${u.uid}">
         <td>${dot}</td>
@@ -927,7 +888,7 @@ function startAdminUsersList(){
         </td>
       </tr>`);
     });
-    $('#adminUsers').innerHTML = rows.join('') || '<tr><td colspan="6">Keine Nutzer gefunden.</td></tr>';
+    $('#adminUsers').innerHTML = rows.join('') || '<tr><td colspan="7">Keine Nutzer gefunden.</td></tr>';
     $('#adminUsers').querySelectorAll('button').forEach(btn=>{
       btn.addEventListener('click', async ()=>{
         const tr=btn.closest('tr'); const uid=tr.getAttribute('data-uid'); const act=btn.getAttribute('data-act');
@@ -936,6 +897,27 @@ function startAdminUsersList(){
         if(act==='delete') return adminDelete(uid);
       });
     });
+  }, async (err)=>{
+    // Fallback ohne orderBy
+    const snap = await db.collection('users').limit(1000).get();
+    const rows=[];
+    snap.forEach(doc=>{
+      const u=doc.data();
+      rows.push(`<tr data-uid="${u.uid}">
+        <td>⚫ Offline</td>
+        <td>${u.name||'Anonym'}</td>
+        <td>${u.email||''}</td>
+        <td>${fmtEUR(u.slotBalance||0)}</td>
+        <td>${fmtEUR(u.slotWinsTotal||0)}</td>
+        <td>${fmtEUR(u.slotLoanOutstanding||0)}</td>
+        <td class="actions">
+          <button class="btn secondary" data-act="give">Geben</button>
+          <button class="btn secondary" data-act="take">Abziehen</button>
+          <button class="btn danger" data-act="delete">Löschen</button>
+        </td>
+      </tr>`);
+    });
+    $('#adminUsers').innerHTML = rows.join('') || '<tr><td colspan="7">Keine Nutzer gefunden.</td></tr>';
   });
 }
 async function adminGive(uid){
@@ -972,14 +954,95 @@ async function adminDelete(uid){
   toast('Nutzer gelöscht. Guthaben an Bank zurück.');
 }
 
-// --- Quick modals ---
-$('#openSearchBtn').addEventListener('click', ()=>{ $('#searchModal').classList.remove('hidden'); $('#searchResults').innerHTML=''; });
+// --- Directory (Lupe) ---
+let _dirUnsub=null, _dirAll=[];
+function startDirectoryStream(){
+  if(_dirUnsub) _dirUnsub();
+  try{
+    _dirUnsub = db.collection('users').orderBy('nameLower').limit(1000).onSnapshot(snap=>{
+      _dirAll = snap.docs.map(d=>d.data());
+      renderUserDirectoryFiltered('');
+    }, async (err)=>{
+      if(_dirUnsub){ try{ _dirUnsub(); }catch(_){} _dirUnsub=null; }
+      // Fallback ohne orderBy
+      const g = await db.collection('users').limit(1000).get();
+      _dirAll = g.docs.map(d=>d.data()).map(u=>({...u, nameLower:(u.name||'').toLowerCase()}));
+      renderUserDirectoryFiltered('');
+    });
+  }catch(e){}
+}
+function renderUserDirectoryFiltered(q){
+  const meId = auth.currentUser?.uid;
+  const list = (!q? _dirAll : _dirAll.filter(u => (u.name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q))).filter(u=>u && u.uid && u.uid!==meId);
+  const html = list.map(u=>`
+    <div class="kpi" data-uid="${u.uid}" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">
+      <span>${u.name||'Anonym'} — ${u.email||''}</span>
+      <button class="btn secondary" data-chat="${u.uid}">Chat</button>
+    </div>`).join('') || '<div class="inline-help">Noch keine anderen Nutzer vorhanden.</div>';
+  const wrap=document.getElementById('searchResults'); wrap.innerHTML = html;
+  wrap.querySelectorAll('button[data-chat]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const uid = btn.getAttribute('data-chat');
+      const peerDoc=await db.collection('users').doc(uid).get();
+      if(!peerDoc.exists){ toast('Nutzer nicht mehr verfügbar.'); return; }
+      const peer=peerDoc.data();
+      const threadId=[auth.currentUser.uid, peer.uid].sort().join('_');
+      const ref=db.collection('threads').doc(threadId); const s=await ref.get();
+      if(!s.exists){ await ref.set({participants:[auth.currentUser.uid,peer.uid],emails:[me.email||null,peer.email||null],createdAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageText:'',lastMessageType:''}); }
+      await openThread(threadId, peer);
+      document.getElementById('searchModal').classList.add('hidden');
+    });
+  });
+}
+function openDirectoryModal(){
+  startDirectoryStream();
+  document.getElementById('searchModal').classList.remove('hidden');
+  const input=document.getElementById('searchGlobal'); input.value=''; input.focus();
+  input.oninput = ()=>{ const q=input.value.trim().toLowerCase(); renderUserDirectoryFiltered(q); };
+}
+$('#openSearchBtn').addEventListener('click', openDirectoryModal);
 $('#searchClose').addEventListener('click', ()=> $('#searchModal').classList.add('hidden'));
+
+// --- Quick modals ---
 $('#openTopBtn').addEventListener('click', ()=>{ $('#topModal').classList.remove('hidden'); });
 $('#topClose').addEventListener('click', ()=> $('#topModal').classList.add('hidden'));
 $('#logoutBtn').addEventListener('click', async ()=>{ try{ await auth.signOut(); localStorage.setItem("staySignedIn","0"); }catch(e){} showView('authView'); });
-$('#forceLoginScreenBtn').addEventListener('click', async ()=>{ localStorage.setItem("staySignedIn","0"); try{ await auth.signOut(); }catch(e){} toast("Login-Bildschirm erzwungen."); showView("authView"); });
-$('#clearSessionBtn').addEventListener('click', async ()=>{ try{ await auth.signOut(); localStorage.removeItem("staySignedIn"); }catch(e){} toast("Sitzung gelöscht."); showView("authView"); });
+
+// --- Profile Edit ---
+$('#profileBtn').addEventListener('click', async ()=>{
+  const user = auth.currentUser; if(!user){ toast('Nicht angemeldet.'); return; }
+  const snap = await db.collection('users').doc(user.uid).get(); const d = snap.data()||{};
+  $('#profileEditPreview').src = d.photoURL || ('https://ui-avatars.com/api/?name=' + encodeURIComponent(d.name||'Ich'));
+  $('#profileEditName').value = d.name || '';
+  $('#profileEditBalance').textContent = fmtEUR(d.slotBalance||0);
+  $('#profileEditModal').classList.remove('hidden');
+});
+$('#profileEditClose').addEventListener('click', ()=> $('#profileEditModal').classList.add('hidden'));
+$('#profileEditPhoto').addEventListener('change', ()=>{
+  const f=$('#profileEditPhoto').files?.[0]; if(!f){ return; }
+  const r=new FileReader(); r.onload=e=>$('#profileEditPreview').src=e.target.result; r.readAsDataURL(f);
+});
+$('#profileEditSave').addEventListener('click', async ()=>{
+  try{
+    const user=auth.currentUser; if(!user) return;
+    let name=($('#profileEditName').value||'').trim(); if(!name) name = 'User';
+    let patch={ name, nameLower:name.toLowerCase(), updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
+    const f=$('#profileEditPhoto').files?.[0]||null;
+    if(f){ try{ const ext=(f.name.split('.').pop()||'jpg'); const ref=storage.ref().child(`pfp/${user.uid}.${ext}`); await ref.put(f); const url=await ref.getDownloadURL(); patch.photoURL=url; }catch(upErr){ /* ignore */ } }
+    await db.collection('users').doc(user.uid).set(patch,{merge:true});
+    const snap=await db.collection('users').doc(user.uid).get(); me = snap.data(); renderMe(me);
+    $('#profileEditModal').classList.add('hidden'); await loadEconomy(); toast('Profil aktualisiert.');
+  }catch(e){ toast('Profil konnte nicht gespeichert werden.'); }
+});
+$('#profileDelete').addEventListener('click', async ()=>{
+  if(!confirm('Profil wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.')) return;
+  try{
+    const user=auth.currentUser; if(!user) return;
+    await db.collection('users').doc(user.uid).delete();
+    try{ await auth.currentUser.delete(); }catch(e){}
+    await auth.signOut(); showView('authView'); toast('Profil gelöscht.');
+  }catch(e){ toast('Löschen fehlgeschlagen.'); }
+});
 
 // Defaults
 $('#profilePhotoPreview').src='https://ui-avatars.com/api/?name=Du';
