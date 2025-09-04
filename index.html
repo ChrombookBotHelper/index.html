@@ -339,7 +339,7 @@
     <div style="max-height:360px;overflow:auto;border:1px solid #23313a;border-radius:12px">
       <table class="table">
         <thead>
-          <tr><th>Name</th><th>E-Mail</th><th>Guthaben</th><th>Wins</th><th>Loan offen</th><th>Aktionen</th></tr>
+          <tr><th>Status</th><th>Name</th><th>E-Mail</th><th>Guthaben</th><th>Wins</th><th>Loan offen</th><th>Aktionen</th></tr>
         </thead>
         <tbody id="adminUsers"></tbody>
       </table>
@@ -411,6 +411,7 @@ async function doAuth(mode){
     await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
     if(mode==='register'){
       await auth.createUserWithEmailAndPassword(email, pass);
+      try{ await ensureUserDocExists(auth.currentUser); }catch(_e){}
       toast('Konto erstellt – Profil anlegen.');
     }else{
       await auth.signInWithEmailAndPassword(email, pass);
@@ -437,6 +438,63 @@ async function doAuth(mode){
 
 // --- Stay signed-in preference ---
 (function(){ const stayPref = localStorage.getItem("staySignedIn") === "1"; if(!stayPref){ try{ auth.signOut(); }catch(e){} } })();
+
+
+// --- Presence (heartbeat) ---
+let hbTimer=null;
+async function startPresence(){ 
+  const user=auth.currentUser; if(!user) return;
+  const ref=db.collection('users').doc(user.uid);
+  const beat = async ()=>{
+    try{ await ref.set({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }); }catch(e){}
+  };
+  // initial
+  beat();
+  // every 25s
+  if(hbTimer) clearInterval(hbTimer);
+  hbTimer = setInterval(beat, 25000);
+  // on visibility / before unload
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) beat(); });
+  window.addEventListener('beforeunload', ()=>{ beat(); });
+}
+
+
+// --- Ensure user profile doc exists (so Admin/Search see accounts) ---
+async function ensureUserDocExists(user){
+  if(!user) return null;
+  const ref = db.collection('users').doc(user.uid);
+  const snap = await ref.get();
+  const email = (user.email||'').trim().toLowerCase();
+  const defaultName = email ? email.split('@')[0] : 'User';
+  const base = {
+    uid: user.uid,
+    email: email || null,
+    name: defaultName,
+    nameLower: defaultName.toLowerCase(),
+    photoURL: null,
+    about: null,
+    birthday: null,
+    slotBalance: 1500,          // Startguthaben für NEUE Accounts
+    slotWinsTotal: 0,
+    slotLoanOutstanding: 0,
+    slotLoanWeekKey: null,
+    slotLoanWeekAmount: 0,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(!snap.exists){
+    await ref.set(base, { merge: true });
+    return base;
+  } else {
+    // Ensure searchable fields always present
+    const d = snap.data()||{};
+    const patch = {};
+    if(!('name' in d) || !d.name){ patch.name = defaultName; }
+    if(!('nameLower' in d) || !d.nameLower){ patch.nameLower = (patch.name||d.name||defaultName).toLowerCase(); }
+    if(Object.keys(patch).length){ patch.updatedAt = firebase.firestore.FieldValue.serverTimestamp(); await ref.set(patch, { merge:true }); }
+    return {...d, ...patch};
+  }
+}
 
 // --- Core app state/logic (kept; trimmed for brevity but functional) ---
 let me=null, adminUnlocked=false;
@@ -496,11 +554,12 @@ auth.onAuthStateChanged(async (user)=>{
         return;
       }
     }
+    await ensureUserDocExists(user);
     const doc=await db.collection('users').doc(user.uid).get();
     me = doc.exists ? doc.data() : null;
     if(!me){ showView('profileView'); }
     else {
-      showView('appView'); renderMe(me); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminSilent(); subscribeLeaderboards();
+      showView('appView'); renderMe(me); startPresence(); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminSilent(); subscribeLeaderboards();
     }
   }catch(err){ console.error(err); try{ await auth.signOut(); }catch(e){} showView('authView'); }
 });
@@ -511,8 +570,8 @@ function unlockAdminSilent(){
   btn.classList.remove('hidden');
   btn.addEventListener('click', ()=>{
     const code = prompt('Admin-Code eingeben:');
-    if(code === OWNER_ADMIN_CODE){ adminUnlocked=true; toast('Admin freigeschaltet.'); openAdmin(); } else { toast('Falscher Code.'); }
-  }, { once:true });
+    if(code === OWNER_ADMIN_CODE){ adminUnlocked=true; openAdmin(); } else { toast('Falscher Code.'); }
+  });
 }
 
 function renderMe(profile){
@@ -536,7 +595,7 @@ $('#saveProfileBtn').addEventListener('click', async ()=>{
     const profile={ uid:user.uid, email:user.email||null, name, nameLower:name.toLowerCase(), birthday, about, photoURL:photoURL||null, slotBalance:1500, slotWinsTotal:0, slotLoanOutstanding:0, slotLoanWeekKey:null, slotLoanWeekAmount:0, createdAt:firebase.firestore.FieldValue.serverTimestamp(), updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
     await db.collection('users').doc(user.uid).set(profile,{merge:true});
     me={...(me||{}),...profile};
-    renderMe(me); showView('appView'); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminSilent(); subscribeLeaderboards();
+    renderMe(me); showView('appView'); startPresence(); startThreadsListener(); await loadEconomy(); await maybeWeeklyToplistReset(); if(user.email===OWNER_EMAIL) unlockAdminSilent(); subscribeLeaderboards();
     toast('Profil gespeichert.');
   }catch(e){ console.error(e); toast('Konnte Profil nicht speichern.'); }
 });
@@ -584,10 +643,19 @@ $('#startChatBtn').addEventListener('click', async ()=>{
   const name=($('#searchName').value||'').trim();
   let peer=null;
   if(email){ const q=await db.collection('users').where('email','==', email).limit(1).get(); if(!q.empty) peer=q.docs[0].data(); }
+
   if(!peer && name){
-    const q=await db.collection('users').orderBy('nameLower').startAt(name.toLowerCase()).endAt(name.toLowerCase()+'\uf8ff').limit(5).get();
-    if(!q.empty) peer=q.docs[0].data();
+    // Prefix search on nameLower
+    try{
+      const q=await db.collection('users').orderBy('nameLower').startAt(name.toLowerCase()).endAt(name.toLowerCase()+'\uf8ff').limit(5).get();
+      if(!q.empty) peer=q.docs[0].data();
+    }catch(e){
+      // Fallback: equality on exact name (no index needed)
+      const q2=await db.collection('users').where('name','==', name).limit(1).get();
+      if(!q2.empty) peer=q2.docs[0].data();
+    }
   }
+
   if(!peer){ toast('Kein Nutzer gefunden.'); return; }
   const id=[auth.currentUser.uid, peer.uid].sort().join('_');
   const ref=db.collection('threads').doc(id); const snap=await ref.get();
@@ -782,9 +850,9 @@ async function finishSpin(bet){
 let lbUnsub=null;
 function subscribeLeaderboards(){
   if(lbUnsub) lbUnsub();
-  lbUnsub = db.collection('users').orderBy('slotWinsTotal','desc').limit(10).onSnapshot(snap=>{
+  lbUnsub = db.collection('users').orderBy('slotWinsTotal','desc').limit(50).onSnapshot(snap=>{
     const rows=[]; let i=1;
-    snap.forEach(doc=>{ const u=doc.data(); rows.push(`<div class="row"><div>#${i}</div><div>${(u.name||'Anonym')}</div><div>${fmtEUR(u.slotWinsTotal||0)}</div></div>`); i++; });
+    snap.forEach(doc=>{ const u=doc.data(); if((u.slotWinsTotal||0)<=0) return; rows.push(`<div class="row"><div>#${i}</div><div>${(u.name||'Anonym')}</div><div>${fmtEUR(u.slotWinsTotal||0)}</div></div>`); i++; });
     const html= rows.length? rows.join('') : '<div class="row"><div>Topliste erscheint, sobald Gewinne vorhanden sind.</div></div>';
     $('#lb').innerHTML=html; $('#lbQuick').innerHTML=html;
   });
@@ -836,13 +904,17 @@ $('#admHardResetBtn').addEventListener('click', async ()=>{
 let adminUsersUnsub=null;
 function startAdminUsersList(){
   if(adminUsersUnsub) adminUsersUnsub();
-  adminUsersUnsub = db.collection('users').orderBy('nameLower').limit(200).onSnapshot(snap=>{
+  adminUsersUnsub = db.collection('users').orderBy('nameLower').limit(1000).onSnapshot(snap=>{
     const filter=($('#admFilter').value||'').trim().toLowerCase();
     const rows=[];
     snap.forEach(doc=>{
       const u=doc.data();
       if(filter && !((u.name||'').toLowerCase().includes(filter) || (u.email||'').toLowerCase().includes(filter))) return;
+      const ls = u.lastSeen && u.lastSeen.toDate ? u.lastSeen.toDate().getTime() : 0;
+      const online = ls && (Date.now()-ls)<60000; // 60s
+      const dot = online? '🟢 Online' : '⚫ Offline';
       rows.push(`<tr data-uid="${u.uid}">
+        <td>${dot}</td>
         <td>${u.name||'Anonym'}</td>
         <td>${u.email||''}</td>
         <td>${fmtEUR(u.slotBalance||0)}</td>
