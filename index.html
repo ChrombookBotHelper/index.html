@@ -640,7 +640,13 @@ async function pushMessage({text=null,imageUrl=null,audioUrl=null,type=null}){
   const user=auth.currentUser; if(!user||!activeThreadId) return;
   const msg={senderId:user.uid,text:text||null,imageUrl:imageUrl||null,audioUrl:audioUrl||null,ts:firebase.firestore.FieldValue.serverTimestamp(),type:type||(imageUrl?'image':audioUrl?'audio':'text')};
   const ref=db.collection('threads').doc(activeThreadId).collection('messages').doc(); await ref.set(msg);
-  await db.collection('threads').doc(activeThreadId).set({lastMessageAt:firebase.firestore.FieldValue.serverTimestamp(),lastMessageText:text||(imageUrl?'🖼️ Bild':audioUrl?'🎤 Sprachnotiz':''),lastMessageType:msg.type},{merge:true});
+  const threadRef = db.collection('threads').doc(activeThreadId);
+  await threadRef.set({
+    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+    lastMessageText: text||(imageUrl?'🖼️ Bild':audioUrl?'🎤 Sprachnotiz':''),
+    lastMessageType: msg.type,
+    participants: [auth.currentUser.uid, (activePeer&&activePeer.uid)||activeThreadId.split('_').find(id=>id!==auth.currentUser.uid)].filter(Boolean).sort()
+  }, { merge:true });
 }
 
 // --- Economy / Bank / Slot ---
@@ -656,17 +662,18 @@ async function loadEconomy(){
   let sw = Number.isFinite(data.slotWinsTotal) ? data.slotWinsTotal : 0;
   const todayKey = new Date().toISOString().slice(0,10);
   if(data.slotLastGrantDate !== todayKey){
-    sb += 500;
-    await db.collection('users').doc(user.uid).set({ slotBalance: sb, slotLastGrantDate: todayKey }, { merge:true });
-    toast('Tagesguthaben +500 verbucht.');
+    const newBal = Math.max(0, Math.floor(sb)) + 500; // immer +500 oben drauf
+    await db.collection('users').doc(user.uid).set({ slotBalance: newBal, slotLastGrantDate: todayKey }, { merge:true });
+    sb = newBal;
+    toast('Täglicher Bonus: +500 €');
   }
   slotBalance=sb; slotWinsTotal=sw; updateEconomyUI();
 }
 function updateEconomyUI(){ $('#slotBalance').textContent=fmtEUR(slotBalance); $('#slotWinsTotal').textContent=fmtEUR(slotWinsTotal); }
 async function saveEconomy(){ const user=auth.currentUser; if(!user) return; await db.collection('users').doc(user.uid).set({ slotBalance, slotWinsTotal, updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, { merge:true }); updateEconomyUI(); }
 
-const SYMS=["🍒","🍋","🍇","🔔","⭐","7️⃣"];
-const SYM_WEIGHTS=[30,25,20,15,7,3]; // schwerer Vollbild
+const SYMS=["🍒","🍋","🍇","🔔","⭐","7️⃣","🍀","🧲"];
+const SYM_WEIGHTS=[12,12,12,12,12,12,12,12]; // gleichverteilte, seltenere 3er
 const BASELINE_BET=10, BASE_WIN_THREE=50, BASE_WIN_FULL=1000;
 
 function buildReelsGrid(grid){
@@ -779,7 +786,7 @@ async function finishSpin(bet){
     if(s0===s1 && s1===s2){ baseWin += BASE_WIN_THREE; if(!threeHitSym) threeHitSym=s0; }
   }
   if(threeHitSym){
-    if(Math.random()<0.15){
+    if(Math.random()<0.05){
       for(let r=0;r<3;r++){ for(let c=0;c<3;c++){ if(grid[r][c]!==threeHitSym && Math.random()<0.15){ grid[r][c]=threeHitSym; } } }
       buildReelsGrid(grid);
       if(isFullScreen(grid)){ baseWin += BASE_WIN_FULL; }
@@ -999,6 +1006,18 @@ function openDirectoryModal(){
   document.getElementById('searchModal').classList.remove('hidden');
   const input=document.getElementById('searchGlobal'); input.value=''; input.focus();
   input.oninput = ()=>{ const q=input.value.trim().toLowerCase(); renderUserDirectoryFiltered(q); };
+
+  // safety: if nach kurzem keine Daten, einmalig get()
+  setTimeout(async ()=>{
+    if((_dirAll||[]).length===0){
+      try{
+        const g = await db.collection('users').limit(1000).get();
+        _dirAll = g.docs.map(d=>d.data()).map(u=>({...u, nameLower:(u.name||'').toLowerCase()}));
+        renderUserDirectoryFiltered('');
+      }catch(_e){}
+    }
+  }, 600);
+
 }
 $('#openSearchBtn').addEventListener('click', openDirectoryModal);
 $('#searchClose').addEventListener('click', ()=> $('#searchModal').classList.add('hidden'));
@@ -1047,5 +1066,46 @@ $('#profileDelete').addEventListener('click', async ()=>{
 // Defaults
 $('#profilePhotoPreview').src='https://ui-avatars.com/api/?name=Du';
 </script>
+
+<script>
+// === OVERRIDES: Robust daily bonus & safe balance writes ===
+async function loadEconomy(){
+  const user=auth.currentUser; if(!user) return;
+  const bank=await getBankDoc(); $('#bankBalanceLabel').textContent = fmtEUR(bank.bankBalance||0); $('#slotBankBalance').textContent=fmtEUR(bank.bankBalance||0);
+  const uref = db.collection('users').doc(user.uid);
+  const todayKey = new Date().toISOString().slice(0,10);
+  await db.runTransaction(async (tx)=>{
+    const snap = await tx.get(uref);
+    const data = snap.exists ? snap.data() : {};
+    const last = data.slotLastGrantDate || null;
+    if(last !== todayKey){
+      tx.set(uref, { 
+        slotBalance: firebase.firestore.FieldValue.increment(500),
+        slotLastGrantDate: todayKey,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge:true });
+    }
+  });
+  const fresh = (await uref.get()).data()||{};
+  slotBalance = Number.isFinite(fresh.slotBalance) ? fresh.slotBalance : 0;
+  slotWinsTotal = Number.isFinite(fresh.slotWinsTotal) ? fresh.slotWinsTotal : 0;
+  updateEconomyUI();
+}
+async function saveEconomy(){
+  const user=auth.currentUser; if(!user) return;
+  const ref = db.collection('users').doc(user.uid);
+  await db.runTransaction(async (tx)=>{
+    const snap = await tx.get(ref);
+    const cur = snap.exists ? (snap.data().slotBalance||0) : 0;
+    const newBal = Math.max(cur, slotBalance|0);
+    tx.set(ref, { slotBalance: newBal, slotWinsTotal, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+  });
+  const fresh = (await ref.get()).data()||{};
+  slotBalance = Number.isFinite(fresh.slotBalance) ? fresh.slotBalance : slotBalance;
+  slotWinsTotal = Number.isFinite(fresh.slotWinsTotal) ? fresh.slotWinsTotal : slotWinsTotal;
+  updateEconomyUI();
+}
+</script>
+
 </body>
 </html>
